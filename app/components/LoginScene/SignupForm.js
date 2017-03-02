@@ -1,13 +1,12 @@
 import React, { Component } from 'react';
 
 import {
-  StyleSheet,
   View,
-  TextInput,
-  TouchableOpacity,
   Text,
-  TouchableHighlight,
-  Alert
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableHighlight
 } from 'react-native';
 
 export default class SignupForm extends Component {
@@ -49,7 +48,7 @@ export default class SignupForm extends Component {
           autoCorrect={false}
           style={styles.input}
           ref={(input) => this.emailInput = input}
-          />
+        />
 
         <TextInput
           placeholder="password"
@@ -59,7 +58,7 @@ export default class SignupForm extends Component {
           secureTextEntry
           style={styles.input}
           ref={(input) => this.passwordInput = input}
-          />
+        />
 
         <TextInput
           placeholder="password confirmation"
@@ -68,7 +67,7 @@ export default class SignupForm extends Component {
           secureTextEntry
           style={styles.input}
           ref={(input) => this.passwordConfirmationInput = input}
-          />
+        />
 
         <TouchableOpacity
           onPress={this.signupButtonPressed.bind(this)}
