@@ -1,69 +1,31 @@
 import React, { Component } from 'react';
 
 import {
-  ActivityIndicator,
-  AppRegistry,
-  Dimensions,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
   View,
+  Text,
+  ListView,
+  Dimensions
 } from 'react-native';
 
-import {
-  Cell,
-  Section,
-  TableView,
-} from 'react-native-tableview-simple';
-
-// Example component for section:headerComponent
-const CustomSectionHeader = () => (
-  <View>
-    <Text>Custom header!</Text>
-  </View>
-);
-
-// eslint-disable-next-line react/prefer-stateless-function
 export default class Diaries extends Component {
-  // eslint-disable-next-line class-methods-use-this
+  constructor(props) {
+    super(props);
+    const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+    this.state = {
+      dataSource: ds.cloneWithRows([
+        'Kobe', 'Joel', 'James', 'Jimmy', 'Jackson', 'Jillian', 'Julie', 'Devin'
+      ])
+    };
+  }
+
   render() {
     return (
-      <ScrollView contentContainerStyle={styles.stage}>
-        <TableView>
-          <Section sectionTintColor='rgba(8, 88, 90, 0.4)'>
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
-          </Section>
-        </TableView>
-      </ScrollView>
+      <ListView
+        style={{width: Dimensions.get('window').width}}
+        dataSource={this.state.dataSource}
+        renderRow={(rowData) => <Text>{rowData}</Text>}
+      />
     );
   }
 }
 
-const styles = StyleSheet.create({
-  stage: {
-    backgroundColor: '#dec7b3',
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height
-  }
-});
