@@ -7,13 +7,12 @@ import {
   StyleSheet
 } from 'react-native';
 
-
 export default class DiaryEntry extends Component {
   render() {
     return (
       <View style={styles.container}>
         <Text style={styles.textContent}>
-        What is isolation? The only answer I can come up with is complete seclusion from any other human contact. Of course, the statement seems broad, but the practice of isolation and the results proceeding such is broad.
+          {this.props.selectedEntry.body}
          </Text>
       </View>
     );

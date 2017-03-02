@@ -7,7 +7,8 @@ import {
   Text,
   TabBarIOS,
   StyleSheet,
-  NavigatorIOS
+  NavigatorIOS,
+  Alert
 } from 'react-native';
 
 import Diary from './Diary';
@@ -23,12 +24,16 @@ export default class DiaryScene extends Component {
   }
 
   handleDiaryEntry(entryId) {
+    const selectedEntry = allDiaryEntries.filter((entry) => {
+      return entry.id == entryId;
+    })[0];
+
     const nextRoute = {
       component: DiaryEntry,
       barTintColor: '#d7baa1',
       tintColor: '#404040',
       titleTextColor: '#800000',
-      passProps: { myProp: 'bar' }
+      passProps: { selectedEntry: selectedEntry }
     };
 
     this.refs.nav.push(nextRoute);
@@ -108,7 +113,7 @@ const allDiaryEntries =  [
     created_at: moment('2017-03-01T23:50:58-08:00')
   },
   {
-    id: 6,
+    id: 12,
     body: "What is isolation? The only answer I can come up with is complete seclusion from any other human contact. Of course, the statement seems broad, but the practice of isolation and the results proceeding such is broad.",
     created_at: moment('2017-03-01T23:50:58-08:00')
   },

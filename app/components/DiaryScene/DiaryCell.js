@@ -39,7 +39,7 @@ export default class DiaryCell extends Component {
     return (
       <View>
       <TouchableOpacity
-        onPress={this.props.handleDiaryEntry.bind(this)}
+        onPress={this.props.handleDiaryEntry.bind(this, this.props.rowData.id)}
         style={styles.cellContainer}>
         <Text style={styles.bodyContent}>
           {this.truncateText(this.props.rowData.body, 35)}
