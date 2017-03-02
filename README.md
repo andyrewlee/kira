@@ -5,8 +5,7 @@ Kira is an open source diary platform built on react native. There are two main 
 
 The first scene is the LoginScene. This is where a user can either log in or sign up.
 
-![LoginScene](http://i.giphy.com/3oKIPjqg3fIvi1oowg.gif)
-
+![LoginScene](http://i.giphy.com/l0IyjWizPdOohrbDG.gif)
 
 ## DiaryScene
 
