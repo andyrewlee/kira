@@ -15,7 +15,7 @@ import DiaryScene from './app/components/DiaryScene/DiaryScene';
 export default class Kira extends Component {
   constructor(props) {
     super(props);
-    this.state = { scene: 'diary' };
+    this.state = { scene: 'login' };
   }
 
   handleLogout() {
