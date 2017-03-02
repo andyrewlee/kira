@@ -32,7 +32,7 @@ export default class SignupForm extends Component {
           placeholder="username"
           placeholderTextColor="rgba(64,64,64,0.5)"
           returnKeyType="next"
-          onSubmitEditing={() => this.passwordInput.focus()}
+          onSubmitEditing={() => this.emailInput.focus()}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
@@ -48,12 +48,14 @@ export default class SignupForm extends Component {
           autoCapitalize="none"
           autoCorrect={false}
           style={styles.input}
+          ref={(input) => this.emailInput = input}
           />
 
         <TextInput
           placeholder="password"
           placeholderTextColor="rgba(64,64,64,0.5)"
           returnKeyType="go"
+          onSubmitEditing={() => this.passwordConfirmationInput.focus()}
           secureTextEntry
           style={styles.input}
           ref={(input) => this.passwordInput = input}
@@ -65,7 +67,7 @@ export default class SignupForm extends Component {
           returnKeyType="go"
           secureTextEntry
           style={styles.input}
-          ref={(input) => this.passwordInput = input}
+          ref={(input) => this.passwordConfirmationInput = input}
           />
 
         <TouchableOpacity
