@@ -37,7 +37,10 @@ export default class DiaryCell extends Component {
     const dateWritten = new Date(this.props.rowData.created_at);
 
     return (
-      <TouchableOpacity style={styles.cellContainer}>
+      <View>
+      <TouchableOpacity
+        onPress={this.props.handleDiaryEntry.bind(this)}
+        style={styles.cellContainer}>
         <Text style={styles.bodyContent}>
           {this.truncateText(this.props.rowData.body, 35)}
         </Text>
@@ -45,6 +48,7 @@ export default class DiaryCell extends Component {
           {this.timeAgoInWords(this.props.rowData.created_at)}
         </Text>
       </TouchableOpacity>
+      </View>
     );
   }
 }

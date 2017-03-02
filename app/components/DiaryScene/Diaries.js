@@ -70,7 +70,7 @@ export default class Diaries extends Component {
       <ListView
         style={{width: Dimensions.get('window').width}}
         dataSource={this.state.dataSource}
-        renderRow={(rowData) => <DiaryCell rowData={rowData} />}
+      renderRow={(rowData) => <DiaryCell rowData={rowData} handleDiaryEntry={this.props.handleDiaryEntry.bind(this)} />}
       />
     );
   }

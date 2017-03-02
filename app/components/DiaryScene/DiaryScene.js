@@ -12,20 +12,28 @@ import {
 } from 'react-native';
 
 import Diary from './Diary';
+import DiaryEntry from './DiaryEntry';
 
 export default class DiaryScene extends Component {
   constructor(props) {
     super(props);
-    this.state = { scene: 'default' };
   }
 
   handleLogout() {
     this.props.handleLogout();
   }
 
-  render() {
-    let nextRoute;
+  handleDiaryEntry() {
+    const nextRoute = {
+      component: DiaryEntry,
+      title: 'Bar That',
+      passProps: { myProp: 'bar' }
+    };
 
+    this.refs.nav.push(nextRoute);
+  }
+
+  render() {
     return (
       <NavigatorIOS
         ref="nav"
@@ -36,7 +44,10 @@ export default class DiaryScene extends Component {
           tintColor: '#404040',
           titleTextColor: '#800000',
           rightButtonIcon: require('../../images/logout.png'),
-          onRightButtonPress: () => this.handleLogout()
+          onRightButtonPress: () => this.handleLogout(),
+          passProps: {
+            handleDiaryEntry: this.handleDiaryEntry.bind(this)
+          }
         }}
         style={{flex: 1}}
       />

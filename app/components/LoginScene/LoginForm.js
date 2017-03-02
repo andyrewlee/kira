@@ -1,12 +1,11 @@
 import React, { Component } from 'react';
 
 import {
-  StyleSheet,
   View,
-  TextInput,
-  TouchableOpacity,
   Text,
-  Alert
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
 } from 'react-native';
 
 export default class LoginForm extends Component {
