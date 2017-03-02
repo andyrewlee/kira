@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 
 import {
+  View,
   Text
 } from 'react-native';
 
@@ -8,7 +9,13 @@ import {
 export default class DiaryEntry extends Component {
   render() {
     return (
-      <Text>DiaryEntry</Text>
+      <View>
+        <Text>DiaryEntry</Text>
+        <Text>DiaryEntry</Text>
+        <Text>DiaryEntry</Text>
+        <Text>DiaryEntry</Text>
+        <Text>DiaryEntry</Text>
+      </View>
     );
   }
 }
