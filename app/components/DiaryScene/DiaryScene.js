@@ -25,7 +25,6 @@ export default class DiaryScene extends Component {
   handleDiaryEntry(entryId) {
     const nextRoute = {
       component: DiaryEntry,
-      title: 'Bar That',
       barTintColor: '#d7baa1',
       tintColor: '#404040',
       titleTextColor: '#800000',
@@ -61,9 +60,9 @@ export default class DiaryScene extends Component {
 
 const myDiaryEntries = [
   {
-    id: 1,
-    body: "My bed. 6 pillows. 4 heavy blankets. Cool sheets. So warm. So comforting. So safe. Lying in bed with the covers drawn over my head. Leaving a small hole to breathe out of. Closing my eyes. For now the problems and worries are non-existent. I forget about the to-do list.",
-    created_at: moment('2017-03-01T21:52:06-08:00')
+    id: 3,
+    body: "20 years from now I won't remember today. These are the words that pushed me to start writing a diary. I probably won't write it here but seeing this in my post history is a good reminder.",
+    created_at: moment('2017-03-01T22:52:06-08:00')
   },
   {
     id: 2,
@@ -71,22 +70,37 @@ const myDiaryEntries = [
     created_at: moment('2017-03-01T23:50:58-08:00')
   },
   {
-    id: 3,
-    body: "20 years from now I won't remember today. These are the words that pushed me to start writing a diary. I probably won't write it here but seeing this in my post history is a good reminder.",
-    created_at: moment('2017-03-01T22:52:06-08:00')
+    id: 1,
+    body: "My bed. 6 pillows. 4 heavy blankets. Cool sheets. So warm. So comforting. So safe. Lying in bed with the covers drawn over my head. Leaving a small hole to breathe out of. Closing my eyes. For now the problems and worries are non-existent. I forget about the to-do list.",
+    created_at: moment('2017-03-01T21:52:06-08:00')
   }
 ];
 
 const allDiaryEntries =  [
+  {
+    id: 1,
+    body: "My bed. 6 pillows. 4 heavy blankets. Cool sheets. So warm. So comforting. So safe. Lying in bed with the covers drawn over my head. Leaving a small hole to breathe out of. Closing my eyes. For now the problems and worries are non-existent. I forget about the to-do list.",
+    created_at: moment('2017-03-01T21:52:06-08:00')
+  },
   {
     id: 4,
     body: "Love is a lie that we happily feed ourselves from generation to generation. For what, though? I don't get it. Granted, my opinion is slightly biased, I've had my heartbroken a time or two. However, the vast amounts of time in between each relationship has given me time to think on the matter.",
     created_at: moment('2017-03-01T21:52:06-08:00')
   },
   {
+    id: 3,
+    body: "20 years from now I won't remember today. These are the words that pushed me to start writing a diary. I probably won't write it here but seeing this in my post history is a good reminder.",
+    created_at: moment('2017-03-01T22:52:06-08:00')
+  },
+  {
     id: 6,
     body: "I think memory is part choice. If you have a conversation with someone about yourself, most of the time they'll only recollect bits and pieces of whatever it was you had to say unless the information pertained to them somehow.",
     created_at: moment('2017-03-01T22:52:06-08:00')
+  },
+  {
+    id: 2,
+    body: "Forget about showering. Forget about cleaning. Showers that need scrubbing. Dinner. Dogs that need to be walked. Bills that need to be paid. Doctors I need to call back. Appointments that need to be made.",
+    created_at: moment('2017-03-01T23:50:58-08:00')
   },
   {
     id: 5,
