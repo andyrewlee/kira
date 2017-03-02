@@ -53,7 +53,7 @@ export default class SignupForm extends Component {
         <TextInput
           placeholder="password"
           placeholderTextColor="rgba(64,64,64,0.5)"
-          returnKeyType="go"
+          returnKeyType="next"
           onSubmitEditing={() => this.passwordConfirmationInput.focus()}
           secureTextEntry
           style={styles.input}
