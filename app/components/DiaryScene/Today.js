@@ -28,6 +28,7 @@ const styles = StyleSheet.create({
   textInput: {
     height: 400,
     borderColor: 'transparent',
+    paddingTop: 80,
     paddingRight: 16,
     paddingLeft: 16
   }

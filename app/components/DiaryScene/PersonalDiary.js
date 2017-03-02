@@ -1,24 +1,69 @@
 import React, { Component } from 'react';
 
 import {
+  ActivityIndicator,
+  AppRegistry,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Switch,
   Text,
-  ListView
+  View,
 } from 'react-native';
 
+import {
+  Cell,
+  Section,
+  TableView,
+} from 'react-native-tableview-simple';
+
+// Example component for section:headerComponent
+const CustomSectionHeader = () => (
+  <View>
+    <Text>Custom header!</Text>
+  </View>
+);
+
+// eslint-disable-next-line react/prefer-stateless-function
 export default class PersonalDiary extends Component {
-  constructor() {
-    super();
-    const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
-    this.state = {
-      dataSource: ds.cloneWithRows(['row 1', 'row 2'])
-    };
-  }
+  // eslint-disable-next-line class-methods-use-this
   render() {
     return (
-      <ListView
-        dataSource={this.state.dataSource}
-        renderRow={(rowData) => <Text>{rowData}</Text>}
-      />
+      <ScrollView contentContainerStyle={styles.stage}>
+        <TableView>
+          <Section sectionTintColor='rgba(128, 0, 0, 0.4)'>
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+            <Cell backgroundColor="#ddc7b4" cellStyle="RightDetail" title="RightDetail" detail="Detail" />
+          </Section>
+        </TableView>
+      </ScrollView>
     );
   }
 }
+
+const styles = StyleSheet.create({
+  stage: {
+    backgroundColor: '#dec7b3',
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height
+  }
+});

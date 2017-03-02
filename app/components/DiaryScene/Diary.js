@@ -81,7 +81,6 @@ export default class Diary extends Component {
 const styles = StyleSheet.create({
   tabContent: {
     flex: 1,
-    paddingTop: 80,
     alignItems: 'center',
     backgroundColor: '#dfc7b2'
   },
