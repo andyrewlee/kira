@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 
 import Today from './Today';
+import PersonalDiary from './PersonalDiary';
+import Diaries from './Diaries';
 
 export default class Diary extends Component {
   constructor(props) {
@@ -18,9 +20,18 @@ export default class Diary extends Component {
   }
 
   renderContent(pageText) {
+    let currentTab;
+    if(this.state.selectedTab === 'todayTab') {
+      currentTab = <Today />;
+    } else if(this.state.selectedTab == 'diaryTab'){
+      currentTab = <PersonalDiary />;
+    } else {
+      currentTab = <Diaries />;
+    }
+
     return (
       <View style={styles.tabContent}>
-        <Today />
+        {currentTab}
       </View>
     );
   }
