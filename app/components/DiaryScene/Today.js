@@ -11,14 +11,26 @@ export default class Today extends Component {
     this.state = { text: '' };
   }
 
+  updateText(text) {
+    this.props.addEntry(this.state.text);
+    this.setState({text: ''});
+  }
+
   render() {
     return (
       <TextInput
         style={styles.textInput}
-        onChangeText={(text) => this.setState({text})}
+        returnKeyType="done"
+        onChangeText={(text) => this.setState({text: text})}
+        onSubmitEditing={(event) => this.updateText(
+          'onSubmitEditing text: ' + event.nativeEvent.text
+        )}
         placeholder="how was your day?"
-        multiline
         value={this.state.text}
+        enablesReturnKeyAutomatically={false}
+        blurOnSubmit={true}
+        returnKeyType="go"
+        multiline
       />
     );
   }
@@ -30,6 +42,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     paddingTop: 80,
     paddingRight: 16,
+    fontSize: 24,
     paddingLeft: 16
   }
 });

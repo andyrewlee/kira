@@ -19,10 +19,15 @@ export default class Diary extends Component {
     this.state = { selectedTab: 'todayTab' };
   }
 
+  addEntry(text) {
+    this.props.addEntry(text);
+    this.setState({selectedTab: 'diaryTab'});
+  }
+
   renderContent(pageText) {
     let currentTab;
     if(this.state.selectedTab === 'todayTab') {
-      currentTab = <Today />;
+      currentTab = <Today addEntry={this.addEntry.bind(this)}/>;
     } else if(this.state.selectedTab == 'diaryTab'){
       currentTab = <PersonalDiary
                      myDiaryEntries={this.props.myDiaryEntries}

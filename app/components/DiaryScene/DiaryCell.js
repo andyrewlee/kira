@@ -26,11 +26,7 @@ export default class DiaryCell extends Component {
   }
 
   timeAgoInWords(momentDate) {
-    return momentDate.fromNow()
-                     .replace(' ', '')
-                     .replace('seconds', 's')
-                     .replace('minutes', 'm')
-                     .replace('hours', 'h');
+    return momentDate.fromNow();
   }
 
   render() {
@@ -38,16 +34,16 @@ export default class DiaryCell extends Component {
 
     return (
       <View>
-      <TouchableOpacity
-        onPress={this.props.handleDiaryEntry.bind(this, this.props.rowData.id)}
-        style={styles.cellContainer}>
-        <Text style={styles.bodyContent}>
-          {this.truncateText(this.props.rowData.body, 35)}
-        </Text>
-        <Text style={styles.timeContent}>
-          {this.timeAgoInWords(this.props.rowData.created_at)}
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={this.props.handleDiaryEntry.bind(this, this.props.rowData.id)}
+          style={styles.cellContainer}>
+          <Text style={styles.bodyContent}>
+            {this.truncateText(this.props.rowData.body, 30)}
+          </Text>
+          <Text style={styles.timeContent}>
+            {this.timeAgoInWords(this.props.rowData.created_at)}
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }

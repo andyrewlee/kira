@@ -17,6 +17,10 @@ import DiaryEntry from './DiaryEntry';
 export default class DiaryScene extends Component {
   constructor(props) {
     super(props);
+    this.state = {
+      myDiaryEntries: myDiaryEntries,
+      allDiaryEntries: allDiaryEntries
+    };
   }
 
   handleLogout() {
@@ -39,6 +43,26 @@ export default class DiaryScene extends Component {
     this.refs.nav.push(nextRoute);
   }
 
+  addEntry(text) {
+    const newEntry = {
+      id: Math.floor(Math.random() * 50) + 20,
+      body: text,
+      created_at: moment()
+    };
+
+
+    let currentDiaryEntries = this.state.allDiaryEntries;
+    let currentMyDiaryEntries = this.state.myDiaryEntries;
+
+    currentDiaryEntries.push(newEntry);
+    currentMyDiaryEntries.unshift(newEntry);
+
+    this.setState({
+      allDiaryEntries: currentDiaryEntries,
+      myDiaryEntries: currentMyDiaryEntries
+    }, console.log(this.state));
+  }
+
   render() {
     return (
       <NavigatorIOS
@@ -53,8 +77,9 @@ export default class DiaryScene extends Component {
           onRightButtonPress: () => this.handleLogout(),
           passProps: {
             handleDiaryEntry: this.handleDiaryEntry.bind(this),
-            myDiaryEntries: myDiaryEntries,
-            allDiaryEntries: allDiaryEntries
+            myDiaryEntries: this.state.myDiaryEntries,
+            allDiaryEntries: this.state.allDiaryEntries,
+            addEntry: this.addEntry.bind(this)
           }
         }}
         style={{flex: 1}}
@@ -143,4 +168,3 @@ const allDiaryEntries =  [
     created_at: moment('2017-03-01T23:50:58-08:00')
   }
 ];
-
