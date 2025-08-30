@@ -1,166 +1,160 @@
 "use client";
 
-import {
-  Authenticated,
-  Unauthenticated,
-  useMutation,
-  useQuery,
-} from "convex/react";
-import { api } from "../convex/_generated/api";
-import Link from "next/link";
-import { SignUpButton } from "@clerk/nextjs";
-import { SignInButton } from "@clerk/nextjs";
-import { UserButton } from "@clerk/nextjs";
+import { Authenticated, Unauthenticated } from "convex/react";
+import { SignUpButton, SignInButton } from "@clerk/nextjs";
+import SiteFooter from "@/components/SiteFooter";
 
 export default function Home() {
   return (
-    <>
-      <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
-        Convex + Next.js + Clerk
-        <UserButton />
-      </header>
-      <main className="p-8 flex flex-col gap-8">
-        <h1 className="text-4xl font-bold text-center">
-          Convex + Next.js + Clerk
-        </h1>
-        <Authenticated>
-          <Content />
-        </Authenticated>
-        <Unauthenticated>
-          <SignInForm />
-        </Unauthenticated>
+    <div className="min-h-screen bg-white text-black">
+      <main className="px-6 sm:px-8 md:px-12 lg:px-20">
+        <Hero />
+        <PreviewReceipt />
+        <Features />
+        <SiteFooter />
       </main>
-    </>
-  );
-}
-
-function SignInForm() {
-  return (
-    <div className="flex flex-col gap-8 w-96 mx-auto">
-      <p>Log in to see the numbers</p>
-      <SignInButton mode="modal">
-        <button className="bg-foreground text-background px-4 py-2 rounded-md">
-          Sign in
-        </button>
-      </SignInButton>
-      <SignUpButton mode="modal">
-        <button className="bg-foreground text-background px-4 py-2 rounded-md">
-          Sign up
-        </button>
-      </SignUpButton>
     </div>
   );
 }
 
-function Content() {
-  const { viewer, numbers } =
-    useQuery(api.myFunctions.listNumbers, {
-      count: 10,
-    }) ?? {};
-  const addNumber = useMutation(api.myFunctions.addNumber);
-
-  if (viewer === undefined || numbers === undefined) {
-    return (
-      <div className="mx-auto">
-        <p>loading... (consider a loading skeleton)</p>
-      </div>
-    );
-  }
-
+function Hero() {
   return (
-    <div className="flex flex-col gap-8 max-w-lg mx-auto">
-      <p>Welcome {viewer ?? "Anonymous"}!</p>
-      <p>
-        Click the button below and open this page in another window - this data
-        is persisted in the Convex cloud database!
-      </p>
-      <p>
-        <button
-          className="bg-foreground text-background text-sm px-4 py-2 rounded-md"
-          onClick={() => {
-            void addNumber({ value: Math.floor(Math.random() * 10) });
-          }}
-        >
-          Add a random number
-        </button>
-      </p>
-      <p>
-        Numbers:{" "}
-        {numbers?.length === 0
-          ? "Click the button!"
-          : (numbers?.join(", ") ?? "...")}
-      </p>
-      <p>
-        Edit{" "}
-        <code className="text-sm font-bold font-mono bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded-md">
-          convex/myFunctions.ts
-        </code>{" "}
-        to change your backend
-      </p>
-      <p>
-        Edit{" "}
-        <code className="text-sm font-bold font-mono bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded-md">
-          app/page.tsx
-        </code>{" "}
-        to change your frontend
-      </p>
-      <p>
-        See the{" "}
-        <Link href="/server" className="underline hover:no-underline">
-          /server route
-        </Link>{" "}
-        for an example of loading data in a server component
-      </p>
-      <div className="flex flex-col">
-        <p className="text-lg font-bold">Useful resources:</p>
-        <div className="flex gap-2">
-          <div className="flex flex-col gap-2 w-1/2">
-            <ResourceCard
-              title="Convex docs"
-              description="Read comprehensive documentation for all Convex features."
-              href="https://docs.convex.dev/home"
-            />
-            <ResourceCard
-              title="Stack articles"
-              description="Learn about best practices, use cases, and more from a growing
-            collection of articles, videos, and walkthroughs."
-              href="https://www.typescriptlang.org/docs/handbook/2/basic-types.html"
-            />
+    <section className="mx-auto max-w-6xl pt-16 sm:pt-24">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+        <div className="lg:col-span-7">
+          <h1 className="font-mono text-4xl sm:text-6xl leading-[0.95] tracking-tight">
+            Make printers your competitive advantage
+          </h1>
+          <p className="mt-6 max-w-xl text-base sm:text-lg">
+            Upgrade your Square receipts and labels with fully custom layouts.
+            Unique typography, seasonal themes, QR codes, and real-time
+            updates—so your brand looks sharp at the counter, on the shelf,
+            and in the bag.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Unauthenticated>
+              <SignUpButton mode="modal">
+                <button className="px-4 py-2 border-2 border-black bg-black text-white font-medium hover:-translate-y-0.5 transition-transform">
+                  Start free
+                </button>
+              </SignUpButton>
+            </Unauthenticated>
+            <Unauthenticated>
+              <SignInButton mode="modal">
+                <button className="px-4 py-2 border-2 border-black bg-white text-black font-medium hover:-translate-y-0.5 transition-transform">
+                  Sign in
+                </button>
+              </SignInButton>
+            </Unauthenticated>
+            <Authenticated>
+              <span className="px-4 py-2 border-2 border-black bg-white text-black font-medium">Welcome back</span>
+            </Authenticated>
+            <span className="ml-2 font-mono text-[11px] tracking-[0.25em] uppercase">Works with Square</span>
           </div>
-          <div className="flex flex-col gap-2 w-1/2">
-            <ResourceCard
-              title="Templates"
-              description="Browse our collection of templates to get started quickly."
-              href="https://www.convex.dev/templates"
-            />
-            <ResourceCard
-              title="Discord"
-              description="Join our developer community to ask questions, trade tips & tricks,
-            and show off your projects."
-              href="https://www.convex.dev/community"
-            />
+        </div>
+        <div className="lg:col-span-5">
+          <div className="hidden lg:block h-px bg-black mb-4" />
+          <ul className="font-mono text-xs tracking-wider leading-6">
+            <li className="flex items-baseline gap-2"><span className="h-2 w-2 border border-black inline-block" /> Receipt & label templates</li>
+            <li className="flex items-baseline gap-2"><span className="h-2 w-2 border border-black inline-block" /> Brand fonts + logo lockups</li>
+            <li className="flex items-baseline gap-2"><span className="h-2 w-2 border border-black inline-block" /> QR codes for promos & menus</li>
+            <li className="flex items-baseline gap-2"><span className="h-2 w-2 border border-black inline-block" /> Schedule seasonal designs</li>
+            <li className="flex items-baseline gap-2"><span className="h-2 w-2 border border-black inline-block" /> Instant updates, zero downtime</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PreviewReceipt() {
+  return (
+    <section className="mx-auto max-w-6xl mt-16 sm:mt-24">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+        <div className="md:col-span-6">
+          <div className="font-mono text-xs uppercase tracking-[0.3em]">Preview</div>
+          <h2 className="mt-2 font-mono text-2xl">Printed, but personal</h2>
+          <p className="mt-4 max-w-prose text-base">
+            Give every receipt and label a point of view. Choose type, spacing,
+            rules, and composition—then push changes in seconds. It’s the
+            tactile brand touch that customers remember.
+          </p>
+        </div>
+        <div className="md:col-span-6">
+          <div className="mx-auto w-full max-w-sm bg-white border-2 border-black rounded-sm shadow-[8px_8px_0_0_#000] p-6 font-mono">
+            <div className="text-center text-sm tracking-widest uppercase">KIRA COFFEE</div>
+            <div className="mt-1 text-center text-[10px] tracking-widest">123 MAIN ST · NYC</div>
+            <div className="mt-4 border-t border-dashed border-black" />
+
+            <div className="mt-4 flex justify-between text-sm">
+              <span>Americano</span>
+              <span>$3.50</span>
+            </div>
+            <div className="mt-1 flex justify-between text-sm">
+              <span>Blueberry Muffin</span>
+              <span>$2.75</span>
+            </div>
+            <div className="mt-1 flex justify-between text-sm">
+              <span>Oat Milk</span>
+              <span>$0.50</span>
+            </div>
+
+            <div className="mt-4 border-t border-dashed border-black" />
+            <div className="mt-3 flex justify-between text-sm font-bold">
+              <span>Total</span>
+              <span>$6.75</span>
+            </div>
+
+            <div className="mt-6 grid grid-cols-3 gap-3 items-center">
+              <div className="col-span-2 text-[10px] leading-4">
+                Scan for rewards + seasonal menu
+              </div>
+              <div className="col-span-1 aspect-square border-2 border-black flex items-center justify-center text-[10px]">QR</div>
+            </div>
+
+            <div className="mt-6 border-t border-dashed border-black" />
+            <div className="mt-3 text-center text-[10px] tracking-widest">
+              THANK YOU · SEE YOU SOON
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-function ResourceCard({
-  title,
-  description,
-  href,
-}: {
-  title: string;
-  description: string;
-  href: string;
-}) {
+function Features() {
+  const items = [
+    {
+      title: "Custom layouts",
+      body: "Design receipts and labels that look like your brand—fonts, spacing, rules, and lockups.",
+    },
+    {
+      title: "QR + campaigns",
+      body: "Drop in QR codes to drive promos, menus, or forms. Swap destinations anytime.",
+    },
+    {
+      title: "Schedules & seasons",
+      body: "Plan designs for holidays and events. Roll out on a date, roll back later.",
+    },
+    {
+      title: "Instant updates",
+      body: "Push changes live with no downtime. Every printer picks up the latest design.",
+    },
+  ];
+
   return (
-    <div className="flex flex-col gap-2 bg-slate-200 dark:bg-slate-800 p-4 rounded-md h-28 overflow-auto">
-      <a href={href} className="text-sm underline hover:no-underline">
-        {title}
-      </a>
-      <p className="text-xs">{description}</p>
-    </div>
+    <section className="mx-auto max-w-6xl mt-20">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {items.map((f) => (
+          <div key={f.title} className="border-2 border-black p-6 bg-white">
+            <div className="font-mono text-xs uppercase tracking-[0.25em]">{f.title}</div>
+            <p className="mt-3 text-base">{f.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
+
+// Footer moved to components/SiteFooter
