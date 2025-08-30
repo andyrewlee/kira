@@ -50,15 +50,15 @@ export default function SiteHeader() {
         {/* Desktop actions */}
         <div className="ml-auto hidden md:flex items-center gap-3">
           <Authenticated>
-            <UserButton />
+            <UserButton afterSignOutUrl="/" />
           </Authenticated>
           <Unauthenticated>
-            <SignInButton mode="modal">
+            <SignInButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
               <button className="px-3 py-1.5 border-2 border-black bg-white text-black hover:-translate-y-0.5 transition-transform">
                 Sign in
               </button>
             </SignInButton>
-            <SignUpButton mode="modal">
+            <SignUpButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
               <button className="px-3 py-1.5 border-2 border-black bg-black text-white hover:-translate-y-0.5 transition-transform">
                 Get started
               </button>
@@ -113,13 +113,13 @@ export default function SiteHeader() {
               })}
               <div className="px-6 py-4 flex items-center gap-3">
                 <Authenticated>
-                  <UserButton />
+                  <UserButton afterSignOutUrl="/" />
                 </Authenticated>
                 <Unauthenticated>
-                  <SignInButton mode="modal">
+                  <SignInButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
                     <button className="px-3 py-1.5 border-2 border-black bg-white text-black">Sign in</button>
                   </SignInButton>
-                  <SignUpButton mode="modal">
+                  <SignUpButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
                     <button className="px-3 py-1.5 border-2 border-black bg-black text-white">Get started</button>
                   </SignUpButton>
                 </Unauthenticated>

@@ -33,14 +33,14 @@ function Hero() {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Unauthenticated>
-              <SignUpButton mode="modal">
+              <SignUpButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
                 <button className="px-4 py-2 border-2 border-black bg-black text-white font-medium hover:-translate-y-0.5 transition-transform">
                   Start free
                 </button>
               </SignUpButton>
             </Unauthenticated>
             <Unauthenticated>
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
                 <button className="px-4 py-2 border-2 border-black bg-white text-black font-medium hover:-translate-y-0.5 transition-transform">
                   Sign in
                 </button>
@@ -158,3 +158,4 @@ function Features() {
 }
 
 // Footer moved to components/SiteFooter
+
