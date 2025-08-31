@@ -6,6 +6,7 @@ import { UserButton } from "@clerk/nextjs";
 
 const items = [
   { href: "/dashboard", label: "Home" },
+  { href: "/dashboard/pickup", label: "Pickup Board" },
   { href: "/dashboard/printers", label: "Printers" },
   { href: "/dashboard/layouts", label: "Layouts" },
   { href: "/dashboard/templates", label: "Templates" },
