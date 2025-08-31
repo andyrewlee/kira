@@ -14,18 +14,64 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar"
 
 const data = {
   navMain: [
     { title: "Home", url: "/dashboard", icon: IconDashboard },
-    { title: "Pickup Board", url: "/dashboard/pickup", icon: IconListDetails },
-    { title: "Printers", url: "/dashboard/printers", icon: IconFolder },
-    { title: "Layouts", url: "/dashboard/layouts", icon: IconFileWord },
-    { title: "Templates", url: "/dashboard/templates", icon: IconFileDescription },
+    {
+      title: "Receipt Printers",
+      url: "/dashboard/receipt-printers",
+      icon: IconFolder,
+      items: [
+        { title: "Editor", url: "/dashboard/receipt-printers/editor" },
+        { title: "Templates", url: "/dashboard/receipt-printers/templates" },
+        { title: "Layout", url: "/dashboard/receipt-printers/layout" },
+      ],
+    },
+    {
+      title: "Label Printers",
+      url: "/dashboard/label-printers",
+      icon: IconFileWord,
+      items: [
+        { title: "Editor", url: "/dashboard/label-printers/editor" },
+        { title: "Templates", url: "/dashboard/label-printers/templates" },
+        { title: "Layout", url: "/dashboard/label-printers/layout" },
+      ],
+    },
+    {
+      title: "Custom Website",
+      url: "/dashboard/website",
+      icon: IconFileDescription,
+      items: [
+        { title: "Editor", url: "/dashboard/website/editor" },
+        { title: "Templates", url: "/dashboard/website/templates" },
+        { title: "Websites", url: "/dashboard/website/websites" },
+      ],
+    },
+    {
+      title: "Pickup Screen",
+      url: "/dashboard/pickup",
+      icon: IconListDetails,
+      items: [
+        { title: "Editor", url: "/dashboard/pickup/editor" },
+        { title: "Templates", url: "/dashboard/pickup/templates" },
+        { title: "Screens", url: "/dashboard/pickup/screens" },
+      ],
+    },
+    {
+      title: "Phone Agent",
+      url: "/dashboard/phone-agent",
+      icon: IconSettings,
+      items: [
+        { title: "Editor", url: "/dashboard/phone-agent/editor" },
+        { title: "Templates", url: "/dashboard/phone-agent/templates" },
+        { title: "Agents", url: "/dashboard/phone-agent/agents" },
+      ],
+    },
     { title: "Settings", url: "/dashboard/settings", icon: IconSettings },
   ],
-  
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -45,6 +91,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
+      <SidebarSeparator />
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>
