@@ -1,6 +1,6 @@
 export const runtime = "nodejs";
 
-export async function POST(req: Request) {
+export async function POST() {
   const xml = [
     '<?xml version="1.0" encoding="utf-8"?>',
     '<PrintRequestInfo>',
