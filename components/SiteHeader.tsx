@@ -150,11 +150,9 @@ export default function SiteHeader() {
                 Sign in
               </button>
             </SignInButton>
-            <SignUpButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
-              <button className="px-3 py-1.5 border-2 border-black bg-black text-white hover:-translate-y-0.5 transition-transform">
-                Get started
-              </button>
-            </SignUpButton>
+            <Link href="/demo" className="px-3 py-1.5 border-2 border-black bg-black text-white hover:-translate-y-0.5 transition-transform">
+              Get a free demo
+            </Link>
           </Unauthenticated>
         </div>
 
@@ -222,9 +220,7 @@ export default function SiteHeader() {
                   <SignInButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
                     <button className="px-3 py-1.5 border-2 border-black bg-white text-black">Sign in</button>
                   </SignInButton>
-                  <SignUpButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
-                    <button className="px-3 py-1.5 border-2 border-black bg-black text-white">Get started</button>
-                  </SignUpButton>
+                  <Link href="/demo" className="px-3 py-1.5 border-2 border-black bg-black text-white">Get a free demo</Link>
                 </Unauthenticated>
               </div>
             </div>
