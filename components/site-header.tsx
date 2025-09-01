@@ -24,6 +24,7 @@ export function SiteHeader() {
         website: "Custom Website",
         pickup: "Pickup Screen",
         "phone-agent": "Phone Agent",
+        register: "Register",
         settings: "Settings",
         editor: "Editor",
         templates: "Templates",

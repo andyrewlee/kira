@@ -28,6 +28,7 @@ const data = {
         { title: "Editor", url: "/dashboard/receipt-printers/editor" },
         { title: "Templates", url: "/dashboard/receipt-printers/templates" },
         { title: "Layout", url: "/dashboard/receipt-printers/layout" },
+        { title: "Register Printer", url: "/dashboard/receipt-printers/register" },
       ],
     },
     {

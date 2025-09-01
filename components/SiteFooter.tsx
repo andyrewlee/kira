@@ -22,7 +22,7 @@ export default function SiteFooter() {
               <li><Link href="/products/label-printers" className="hover:opacity-70">Label Printers</Link></li>
               <li><Link href="/products/custom-website" className="hover:opacity-70">Custom Website</Link></li>
               <li><Link href="/products/pickup-screen" className="hover:opacity-70">Pickup Screen</Link></li>
-              <li><Link href="/products/ai-phone-agent" className="hover:opacity-70">AI Phone Agent</Link></li>
+              <li><Link href="/products/phone-agent" className="hover:opacity-70">Phone Agent</Link></li>
             </ul>
           </div>
           <div>

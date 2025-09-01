@@ -1,8 +1,11 @@
+"use client"
+
+import CanvasEditor from "@/components/editor/CanvasEditor"
+
 export default function ReceiptPrintersEditorPage() {
   return (
-    <div>
-      <h2 className="text-lg font-medium">Receipt Printers · Editor</h2>
+    <div className="space-y-4">
+      <CanvasEditor storageKey="rp-editor" width={384} height={800} />
     </div>
   )
 }
-

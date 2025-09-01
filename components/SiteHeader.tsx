@@ -92,7 +92,7 @@ export default function SiteHeader() {
     { href: "/products/label-printers", label: "Label Printers", desc: "Barista‑friendly labels that surface modifiers clearly.", Icon: Tag },
     { href: "/products/custom-website", label: "Custom Website", desc: "AI‑shaped site grounded in your Square data.", Icon: Globe },
     { href: "/products/pickup-screen", label: "Pickup Screen", desc: "Delightful order boards with voice callouts.", Icon: Monitor },
-    { href: "/products/ai-phone-agent", label: "AI Phone Agent", desc: "Answers calls with accurate info from Square.", Icon: PhoneCall },
+    { href: "/products/phone-agent", label: "Phone Agent", desc: "Answers calls with accurate info from Square.", Icon: PhoneCall },
   ] as const;
   return (
     <header ref={headerRef} className="sticky top-0 z-10 bg-white border-b-2 border-black text-black">
