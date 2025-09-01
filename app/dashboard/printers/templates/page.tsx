@@ -11,37 +11,13 @@ export default function PrintersTemplates() {
   ]
 
   const useOrderTemplate = (id: string) => {
-    const key = "order-editor"
-    const payload = id === "order-number"
-      ? [
-          { id: "t1", type: "text", text: "Order {{order.number}}", fontSize: 28, align: "center", x: 20, y: 20, w: 340, h: 40 },
-          { id: "t2", type: "line", thickness: 2, x: 20, y: 70, w: 340, h: 2 }
-        ]
-      : [
-          { id: "h1", type: "text", text: "{{order.location}}", fontSize: 16, align: "center", x: 20, y: 16, w: 340, h: 24 },
-          { id: "ln1", type: "line", thickness: 2, x: 20, y: 48, w: 340, h: 2 },
-          { id: "n1", type: "text", text: "#{{order.number}}", fontSize: 14, align: "left", x: 20, y: 56, w: 120, h: 20 }
-        ]
-    localStorage.setItem(key, JSON.stringify(payload))
-    localStorage.setItem("printers-scope", "order")
-    window.location.href = "/dashboard/printers/editor"
+    const t = id === 'order-number' ? 'order-number' : 'order-simple'
+    window.location.href = `/dashboard/printers/editor?template=${t}`
   }
 
   const useItemTemplate = (id: string) => {
-    const key = "item-editor"
-    const payload = id === "price"
-      ? [
-          { id: "t1", type: "text", text: "{{order.items.0.name}}", fontSize: 14, align: "left", x: 10, y: 8, w: 300, h: 20 },
-          { id: "t2", type: "text", text: "$ {{order.total}}", fontSize: 16, align: "right", x: 10, y: 28, w: 300, h: 20 },
-          { id: "l1", type: "line", thickness: 2, x: 10, y: 52, w: 300, h: 2 }
-        ]
-      : [
-          { id: "q1", type: "qr", value: "{{order.id}}", x: 230, y: 8, w: 80, h: 80 },
-          { id: "n1", type: "text", text: "{{order.items.0.name}}", fontSize: 12, align: "left", x: 10, y: 8, w: 210, h: 20 }
-        ]
-    localStorage.setItem(key, JSON.stringify(payload))
-    localStorage.setItem("printers-scope", "item")
-    window.location.href = "/dashboard/printers/editor"
+    const t = id === 'price' ? 'item-price' : 'item-sku'
+    window.location.href = `/dashboard/printers/editor?template=${t}`
   }
 
   return (

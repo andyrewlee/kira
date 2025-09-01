@@ -3,6 +3,11 @@
 - Goal: Simulate the voice agent flow in a browser-only UI with no telephony: transcripts, tool-call panels with mocked results, and simple branching. No Vapi, no Square, no network.
 - Constraints: All state in React; resets on refresh.
 
+## Repo Path Constraint
+- Implement only in existing Next files under `app/dashboard/*`.
+- Suggested path: `app/dashboard/phone-agent/page.tsx` and tiny helpers in `app/dashboard/phone-agent/*.(ts|tsx)`.
+- Do not add files outside `app/dashboard/` or modify global config.
+
 ## Tech (Prototype)
 - Next.js App Router
 - React components only; no backend

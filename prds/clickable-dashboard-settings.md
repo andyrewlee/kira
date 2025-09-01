@@ -3,6 +3,11 @@
 - Goal: Demonstrate the “Connect Square” experience without real OAuth. Show state transitions, success/error screens, and token status UI — all mocked in-memory.
 - Constraints: No network, no cookies, no persistence.
 
+## Repo Path Constraint
+- Implement only in existing Next files under `app/dashboard/*`.
+- Suggested paths: `app/dashboard/settings/page.tsx` and lightweight helpers in `app/dashboard/settings/*.(ts|tsx)`.
+- Do not add files outside `app/dashboard/` or modify global config.
+
 ## Tech (Prototype)
 - Next.js App Router
 - React state only

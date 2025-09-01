@@ -3,6 +3,11 @@
 - Goal: A browsable, no-backend demo of the multi‑location marketing site: Home, Locations list with client search, Location detail with JSON‑LD embed, About, Contact — all backed by local fixtures. No Square.
 - Constraints: Static data modules only, React state for search, no persistence.
 
+## Repo Path Constraint
+- Implement only in existing Next files under `app/dashboard/*`.
+- Suggested paths: `app/dashboard/custom-website/page.tsx`, `app/dashboard/locations/page.tsx`, `app/dashboard/locations/[id]/page.tsx`, and small helpers in `app/dashboard/**/*.(ts|tsx)`.
+- Do not add files outside `app/dashboard/` or modify global config.
+
 ## Tech (Prototype)
 - Next.js App Router
 - Static TS/JSON fixtures for locations and hours

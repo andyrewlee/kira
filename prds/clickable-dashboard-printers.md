@@ -3,6 +3,11 @@
 - Goal: A fully clickable in-browser prototype that demonstrates the designer UX with real drag-and-drop using Fabric.js, Handlebars-style bindings against a local sample Order JSON, and PNG export — all in ephemeral state. No persistence, no Square calls.
 - Constraints: Client-only, no localStorage, no backend. Everything resets on refresh.
 
+## Repo Path Constraint
+- Implement only in existing Next files under `app/dashboard/*`.
+- Suggested paths: `app/dashboard/printers/page.tsx` and small helpers in `app/dashboard/printers/*.(ts|tsx)`.
+- Do not add files outside `app/dashboard/` or modify global config.
+
 ## Tech (Prototype)
 - Next.js App Router, client-only route for the editor
 - Fabric.js for canvas + transforms (resize, rotate, move)

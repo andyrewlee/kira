@@ -8,6 +8,11 @@
 - Stores `SQUARE_ACCESS_TOKEN`, `SQUARE_ENV`, and optional per-location settings (e.g., hours overrides, reservation mappings).
 - Provides a minimal admin UI to verify connection, test API calls, and surface basic org metadata.
 
+## Repo Path Constraint
+- Implement in existing Next files under `app/dashboard/*` only.
+- Suggested paths: `app/dashboard/settings/page.tsx` and API handlers under `app/dashboard/settings/api/*.(ts)` if needed; keep all supporting code in `app/dashboard/settings/*`.
+- Avoid changes outside `app/dashboard/` unless explicitly approved.
+
 ## What To Build
 - Server-side OAuth (authorization code) flow for Square; secrets stay on the server.
 - App Router API routes to start OAuth, handle callback, disconnect, and receive OAuth webhooks.

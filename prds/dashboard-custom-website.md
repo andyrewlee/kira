@@ -85,6 +85,11 @@ Use this as the one-shot prompt for `POST /chats/create`:
 - Do not expose Square token to client; server-only fetch.
 - Input validation and basic rate limits for internal APIs.
 
+## Repo Path Constraint
+- Implement in existing Next files under `app/dashboard/*` only.
+- Suggested paths: `app/dashboard/custom-website/page.tsx`, `app/dashboard/locations/page.tsx`, `app/dashboard/locations/[id]/page.tsx`, and small helpers under `app/dashboard/**/*.(ts|tsx)`; any admin endpoints under `app/dashboard/locations/api/*.(ts)`.
+- Avoid files outside `app/dashboard/` unless explicitly approved.
+
 ## TODOs
 
 ### Phase 0 — Discovery

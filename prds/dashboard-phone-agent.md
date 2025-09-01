@@ -71,6 +71,11 @@ Voice agent built on Vapi AI for inbound/outbound calls. Answers questions about
 - Store call logs: caller, start/end, tool calls, errors, disposition.
 - Metrics: containment, transfers, average handle time, tool success rate.
 
+## Repo Path Constraint
+- Implement in existing Next files under `app/dashboard/*` only.
+- Suggested paths: `app/dashboard/phone-agent/page.tsx` and the webhook route under `app/dashboard/phone-agent/api/vapi/webhook/route.ts`; keep helpers in `app/dashboard/phone-agent/*.(ts|tsx)`.
+- Avoid files outside `app/dashboard/` unless explicitly approved.
+
 ## TODOs
 
 ### Phase 0 — Discovery

@@ -17,13 +17,24 @@ export default function WebsiteEditorPage() {
     setHtml(content)
   }
 
-  const saveDraft = () => {
-    const sites = readSites()
-    const id = Math.random().toString(36).slice(2)
-    sites.push({ id, name: titleFrom(prompt) || `Site ${sites.length + 1}`, html, status: "draft" })
-    localStorage.setItem("sites", JSON.stringify(sites))
-    alert("Draft saved")
-  }
+  // Load template from query and auto-generate
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const p = new URLSearchParams(window.location.search)
+    const t = p.get('template')
+    if (!t) return
+    const presets: Record<string,string> = {
+      'coffee-basic': 'title: Kira Coffee\nsub: Find a store near you'
+    }
+    const text = presets[t] || ''
+    if (text) {
+      setPrompt(text)
+      setTimeout(generate, 0)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const saveDraft = () => { alert("Mock only — no persistence in prototype") }
 
   return (
     <div className="space-y-4">
@@ -33,7 +44,7 @@ export default function WebsiteEditorPage() {
           <textarea className="w-full border rounded p-2 h-40" placeholder="Describe your site (brand, vibe, sections)…" value={prompt} onChange={e => setPrompt(e.target.value)} />
           <div className="flex gap-2">
             <button className="border px-3 py-1.5 text-sm" onClick={generate}>Generate</button>
-            <button className="border px-3 py-1.5 text-sm" onClick={saveDraft}>Save Draft</button>
+            <button className="border px-3 py-1.5 text-sm" onClick={saveDraft}>Save Draft (mock)</button>
           </div>
         </div>
         <div>
@@ -53,5 +64,5 @@ function subFrom(text: string) {
   const m = text.match(/sub:\s*([^\n]+)/i)
   return m?.[1]?.trim()
 }
-function readSites(): Site[] { return JSON.parse(localStorage.getItem("sites") || "[]") }
+function readSites(): Site[] { return [] }
 function escapeHtml(s: string){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c] as string))}

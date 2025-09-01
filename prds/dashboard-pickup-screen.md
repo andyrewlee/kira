@@ -61,6 +61,11 @@ Generate a real-time pickup board using the v0 Platform API from a single prompt
 - Keep secrets server-side; add basic auth secret for webhook endpoint if desired.
 - Do not expose OpenAI API key to the client; all TTS occurs server-side.
 
+## Repo Path Constraint
+- Implement in existing Next files under `app/dashboard/*` only.
+- Suggested paths: `app/dashboard/pickup-screen/page.tsx` and API routes under `app/dashboard/pickup-screen/api/*.(ts)`; helpers in `app/dashboard/pickup-screen/*.(ts|tsx)`.
+- Avoid files outside `app/dashboard/` unless explicitly approved.
+
 ## TODOs
 
 ### Phase 0 — Discovery

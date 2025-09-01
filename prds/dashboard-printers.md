@@ -8,6 +8,11 @@
 ## Overview
 A simple designer that lets a user drag and drop elements onto a paper or label canvas, bind fields from a Square Order payload using Handlebars templates, and render the final layout and data into a deterministic PNG. A single designer and renderer supports both receipts and labels. Users select the printer (TM‑m30 family or TM‑L100) and the intended use (receipt or label).
 
+## Repo Path Constraint
+- Implement in existing Next files under `app/dashboard/*` only.
+- Suggested paths: `app/dashboard/printers/page.tsx` plus focused helpers in `app/dashboard/printers/*.(ts|tsx)`; any prototype routes or components should live under this folder.
+- Keep changes scoped; avoid files outside `app/dashboard/` unless explicitly approved.
+
 ## Tech Stack (open source)
 - Editor canvas: Fabric.js in a client‑only Next.js route for selection, transform, and object management.
 - State and schema: Zustand or Redux (optional) and Zod for schema validation (optional).

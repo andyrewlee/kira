@@ -3,6 +3,11 @@
 - Goal: A no-backend demo that looks and feels like the real pickup board. Two columns (Preparing, Finished), live updates driven by on-page controls, optional voice cue, all in-memory.
 - Constraints: No webhooks, no SSE, no OpenAI. No persistence.
 
+## Repo Path Constraint
+- Implement only in existing Next files under `app/dashboard/*`.
+- Suggested path: `app/dashboard/pickup-screen/page.tsx` and small helpers in `app/dashboard/pickup-screen/*.(ts|tsx)`.
+- Do not add files outside `app/dashboard/` or modify global config.
+
 ## Tech (Prototype)
 - Next.js App Router
 - React state only (no localStorage)
