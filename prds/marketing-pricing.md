@@ -57,3 +57,9 @@
 - Typography: strong monospace tier labels and prices; readable body; small caps for inclusions.
 - Shapes: bordered tier cards with offset shadows; highlight “Most popular”.
 - Visual aids: simple checkmarks, dashed dividers, subtle badges (No POS swap, Month‑to‑month).
+
+## Section Styles & Variation (must‑haves)
+- Use 6–8 distinct patterns; avoid three card sections in a row.
+- Patterns to include: split hero; bundle vs a‑la‑carte bands; hardware at‑cost strip with big numerals; feature matrix using only rules (no boxes); ROI idea list with icons; minimalist FAQs; bottom CTA band.
+- Typography: dramatic price scale (mono 6xl) paired with micro‑labels; vary type size across sections to keep rhythm.
+- Visual accents: large checkboxes, badges, thin rules, occasional perforation strip.

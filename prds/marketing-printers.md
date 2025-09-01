@@ -73,3 +73,12 @@
 ## SEO
 - Title: Printers for Square — Custom Receipts and Labels with QR/Barcodes
 - Meta: Design receipts and per‑item labels that match your brand. Powered by live Square data, with QR/barcodes for loyalty, menus, status, and automations.
+
+## Section Styles & Variation (must‑haves)
+- Never repeat the same layout pattern twice in a row. Aim for 7–10 distinct sections.
+- Mix patterns: receipt strip collage, label ticket grid, timeline step bar, split hero with browser/phone mocks, full‑bleed callout band, alternating zig‑zag text/visuals, simple list rows with only dividers (no boxes), and a minimalist FAQ.
+- Typography: alternate large `Geist Mono` headlines, tight mono labels, and roomy body. Use scale jumps between sections (e.g., 6xl → 2xl → 3xl) to keep rhythm.
+- Neobrutalist accents: 2px black borders, offset shadows, perforation strips, dashed rules, big checkboxes, and QR placeholders. Use them differently per section.
+- Spacing: 64–96px between sections; vary inner padding (12–28px). Allow at least one full‑bleed band with extra top/bottom whitespace.
+- Color/use of white: keep mostly black/white; introduce a single light accent band if needed, but maintain brand clarity.
+- Motion: only micro‑interactions (hover lifts, underline reveals). No carousels.

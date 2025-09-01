@@ -56,3 +56,9 @@
 - Typography: bold monospace headline; approachable body copy; small uppercase labels.
 - Shapes: rounded cards with 2px borders and offset shadows; dotted separators.
 - Motion: micro hover states only (no heavy animation) to keep it calm.
+
+## Section Styles & Variation (must‑haves)
+- Minimum 7 distinct section patterns with no consecutive duplicates.
+- Patterns to include: split hero with device mock + waveform; perforation divider; transcript bubbles (no outer box); 3‑column highlight strip using only rules; zig‑zag use cases; full‑bleed reassurance band about accuracy/privacy; compact FAQ with simple rules.
+- Typography: vary size and weight each section; swap between big mono display, micro‑labels, and friendly body.
+- Visual accents: speech bubbles, waveform bars, tiny phone icons; change composition per section to avoid sameness.

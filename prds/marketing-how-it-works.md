@@ -59,3 +59,9 @@
 - Typography: big `Geist Mono` headlines and section labels; `Geist` for body; small uppercase micro‑labels.
 - Shapes: 2px black borders, offset shadows (`shadow-[8px_8px_0_0_#000]`), perforation strips, dotted rules.
 - Visual variety: alternate text‑left/visual‑right; grid of product cards; large, legible mock boards and receipts.
+
+## Section Styles & Variation (must‑haves)
+- Minimum 7 distinct patterns; no two adjacent sections should share the same construction.
+- Patterns to include: split hero + collage; perforation divider; dashed‑spine timeline; aside “Notes” card with only rules; zig‑zag tool highlights; full‑bleed publish band; KPI row (no boxes) with mono numerals; tiny FAQ.
+- Typography: alternate large mono numerals, compact labels, and standard body; change scales between each section.
+- Accents: stamps, checkboxes, QR placeholders; use differently across the page to avoid repetition.

@@ -51,3 +51,10 @@
 - Shapes: bordered mock pages, browser chrome bars, and offset card shadows.
 - Visual motifs: SEO schema badges, lightning‑fast icons, location cards with maps.
 - Rhythm: 72–96px between sections; 16–24px padding within cards; consistent dotted rules.
+
+## Section Styles & Variation (must‑haves)
+- Use at least 8 distinct section patterns. Avoid repeating box grids back‑to‑back.
+- Patterns to include: split hero + browser mock; perforation divider; 2‑column outcome “tickets”; alternating text/visual zig‑zag; full‑bleed callout band; location card row (borders); list rows with only rules (no boxes); step tiles with oversized numbers; minimalist FAQ.
+- Typography: swing between oversized mono headlines and compact label caps; change scale between adjacent sections.
+- Neobrutalism: 2px borders + offset shadows used differently per section (e.g., mock browser vs. small tickets).
+- White space first: allow airy sections with just type and thin rules to break up heavy visuals.

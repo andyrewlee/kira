@@ -51,3 +51,9 @@
 - Shapes: bordered tiles with rounded corners; gentle offset shadows; perforation or dashed separators.
 - Motion: subtle “flip to Finished” animation preview (quick fade/slide), not constant loops.
 - Accessibility: color contrast and large hit areas in examples.
+
+## Section Styles & Variation (must‑haves)
+- Use at least 7 distinct section patterns; never two grids in a row.
+- Patterns to include: split hero with board mock; perforation strip; light/dark side‑by‑side boards; outcome list rows with only rules; zig‑zag use cases; full‑bleed “Finished callout” band; small control panel mock (privacy/volume) without borders; minimalist FAQ.
+- Typography: rotate through big mono numerals, compact labels, and legible body; change sizes section‑to‑section to keep rhythm.
+- Visual accents: name tiles, number strips, simple icons; vary density between sections (dense mock vs airy text band).
