@@ -6,7 +6,7 @@ const products = [
   { name: "Label Printers", slug: "label-printers", blurb: "Barista-friendly labels that show modifiers clearly; QR/barcodes optional." },
   { name: "Custom Website", slug: "custom-website", blurb: "AI-shaped site grounded in your Square data. SEO and AI-discovery ready." },
   { name: "Pickup Screen", slug: "pickup-screen", blurb: "Delightful order status screens with optional voice callouts and themes." },
-  { name: "AI Phone Agent", slug: "ai-phone-agent", blurb: "Answers common calls with live info from Square. Review transcripts later." },
+  { name: "Phone Agent", slug: "phone-agent", blurb: "Answers common calls with live info from Square. Review transcripts later." },
 ];
 
 export default function ProductsPage() {

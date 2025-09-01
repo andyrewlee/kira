@@ -290,7 +290,7 @@ function PhoneAgentStrip() {
         <div className="font-mono text-xs uppercase tracking-[0.3em]">AI phone agent</div>
         <h3 className="mt-2 font-mono text-2xl">Never miss a call</h3>
         <p className="mt-3 text-base">When staff can’t pick up, an agent answers using your Square hours and menu—then logs a transcript.</p>
-        <div className="mt-4 text-sm"><Link href="/products/ai-phone-agent" className="underline">Explore AI phone agent</Link></div>
+        <div className="mt-4 text-sm"><Link href="/products/phone-agent" className="underline">Explore phone agent</Link></div>
       </div>
       <div className="md:col-span-7">
         <div className="border-2 border-black bg-white p-4 sm:p-6">
