@@ -21,24 +21,14 @@ const data = {
   navMain: [
     { title: "Home", url: "/dashboard", icon: IconDashboard },
     {
-      title: "Receipt Printers",
-      url: "/dashboard/receipt-printers",
+      title: "Printers",
+      url: "/dashboard/printers",
       icon: IconFolder,
       items: [
-        { title: "Editor", url: "/dashboard/receipt-printers/editor" },
-        { title: "Templates", url: "/dashboard/receipt-printers/templates" },
-        { title: "Layout", url: "/dashboard/receipt-printers/layout" },
-        { title: "Register Printer", url: "/dashboard/receipt-printers/register" },
-      ],
-    },
-    {
-      title: "Label Printers",
-      url: "/dashboard/label-printers",
-      icon: IconFileWord,
-      items: [
-        { title: "Editor", url: "/dashboard/label-printers/editor" },
-        { title: "Templates", url: "/dashboard/label-printers/templates" },
-        { title: "Layout", url: "/dashboard/label-printers/layout" },
+        { title: "Editor", url: "/dashboard/printers/editor" },
+        { title: "Templates", url: "/dashboard/printers/templates" },
+        { title: "Layout", url: "/dashboard/printers/layout" },
+        { title: "Register Printer", url: "/dashboard/printers/register" },
       ],
     },
     {

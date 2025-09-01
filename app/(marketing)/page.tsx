@@ -88,9 +88,7 @@ function ReceiptStrip() {
         <h3 className="mt-2 font-mono text-2xl">Receipts that look like you</h3>
         <p className="mt-3 max-w-prose text-base">Design the little details customers remember—type, spacing, rules, and QR codes. Schedule seasonal designs and push updates instantly.</p>
         <div className="mt-4 flex gap-3 text-sm">
-          <Link href="/products/receipt-printers" className="underline">See receipt printers</Link>
-          <span>•</span>
-          <Link href="/products/label-printers" className="underline">See label printers</Link>
+          <Link href="/products/printers" className="underline">See printers</Link>
         </div>
       </div>
       <div className="md:col-span-1">

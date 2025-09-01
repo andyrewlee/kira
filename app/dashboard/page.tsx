@@ -7,8 +7,8 @@ type Activity = { t: number; text: string }
 
 export default function DashboardHome() {
   const [square, setSquare] = useState<{ connected: boolean; location?: string }>({ connected: false })
-  const [rpLayouts, setRpLayouts] = useState(0)
-  const [lpLayouts, setLpLayouts] = useState(0)
+  const [orderLayouts, setOrderLayouts] = useState(0)
+  const [itemLayouts, setItemLayouts] = useState(0)
   const [printers, setPrinters] = useState(0)
   const [sites, setSites] = useState({ total: 0, live: 0 })
   const [screens, setScreens] = useState(0)
@@ -19,9 +19,9 @@ export default function DashboardHome() {
     try {
       const conn = JSON.parse(localStorage.getItem("square-conn") || "{}")
       setSquare({ connected: !!conn.connected, location: conn.location || undefined })
-      setRpLayouts((JSON.parse(localStorage.getItem("rp-layouts") || "[]") as any[]).length)
-      setLpLayouts((JSON.parse(localStorage.getItem("lp-layouts") || "[]") as any[]).length)
-      setPrinters((JSON.parse(localStorage.getItem("rp-devices") || "[]") as any[]).filter((d: any) => d.paired).length)
+      setOrderLayouts((JSON.parse(localStorage.getItem("order-layouts") || "[]") as any[]).length)
+      setItemLayouts((JSON.parse(localStorage.getItem("item-layouts") || "[]") as any[]).length)
+      setPrinters((JSON.parse(localStorage.getItem("printers-devices") || localStorage.getItem("rp-devices") || "[]") as any[]).filter((d: any) => d.paired).length)
       const s = JSON.parse(localStorage.getItem("sites") || "[]") as any[]
       setSites({ total: s.length, live: s.filter(x => x.status === "live").length })
       setScreens((JSON.parse(localStorage.getItem("pickup-screens") || "[]") as any[]).length)
@@ -33,22 +33,21 @@ export default function DashboardHome() {
   const onboarding = useMemo(() => {
     const items: Array<{ done: boolean; label: string; href: string }> = []
     items.push({ done: square.connected, label: square.connected ? `Square connected (${square.location})` : "Connect Square", href: "/dashboard/settings" })
-    items.push({ done: rpLayouts > 0, label: rpLayouts > 0 ? "Receipt layout created" : "Create your first receipt layout", href: "/dashboard/receipt-printers/editor" })
-    items.push({ done: printers > 0, label: printers > 0 ? "Printer paired" : "Register a receipt printer", href: "/dashboard/receipt-printers/register" })
-    items.push({ done: lpLayouts > 0, label: lpLayouts > 0 ? "Label layout created" : "Create your first label layout", href: "/dashboard/label-printers/editor" })
+    items.push({ done: orderLayouts > 0 || itemLayouts > 0, label: orderLayouts > 0 || itemLayouts > 0 ? "Printer layout created" : "Create your first printer layout", href: "/dashboard/printers/editor" })
+    items.push({ done: printers > 0, label: printers > 0 ? "Printer paired" : "Register a printer", href: "/dashboard/printers/register" })
     items.push({ done: sites.total > 0, label: sites.total > 0 ? "Website generated" : "Generate your website", href: "/dashboard/website/editor" })
     items.push({ done: screens > 0, label: screens > 0 ? "Pickup screen added" : "Add a pickup screen", href: "/dashboard/pickup/screens" })
     items.push({ done: agentPrompt, label: agentPrompt ? "Phone agent prompt set" : "Configure phone agent prompt", href: "/dashboard/phone-agent/editor" })
     return items
-  }, [square, rpLayouts, printers, lpLayouts, sites, screens, agentPrompt])
+  }, [square, orderLayouts, printers, itemLayouts, sites, screens, agentPrompt])
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Kpi title="Square" value={square.connected ? "Connected" : "Not connected"} hint={square.location || ""} href="/dashboard/settings" />
-        <Kpi title="Receipt Layouts" value={String(rpLayouts)} href="/dashboard/receipt-printers/layout" />
-        <Kpi title="Paired Printers" value={String(printers)} href="/dashboard/receipt-printers/register" />
-        <Kpi title="Label Layouts" value={String(lpLayouts)} href="/dashboard/label-printers/layout" />
+        <Kpi title="Order Layouts" value={String(orderLayouts)} href="/dashboard/printers/layout" />
+        <Kpi title="Paired Printers" value={String(printers)} href="/dashboard/printers/register" />
+        <Kpi title="Item Layouts" value={String(itemLayouts)} href="/dashboard/printers/layout" />
         <Kpi title="Websites" value={`${sites.live}/${sites.total} live`} href="/dashboard/website/websites" />
         <Kpi title="Pickup Screens" value={String(screens)} href="/dashboard/pickup/screens" />
       </div>

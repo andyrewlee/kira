@@ -16,8 +16,7 @@ export default function PageBreadcrumbs() {
   const segs = (pathname || "").split("/").filter(Boolean)
   const labelMap: Record<string, string> = useMemo(() => ({
     dashboard: "Home",
-    "receipt-printers": "Receipt Printers",
-    "label-printers": "Label Printers",
+    printers: "Printers",
     website: "Custom Website",
     pickup: "Pickup Screen",
     "phone-agent": "Phone Agent",
@@ -65,4 +64,3 @@ export default function PageBreadcrumbs() {
     </div>
   )
 }
-

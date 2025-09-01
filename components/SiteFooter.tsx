@@ -18,8 +18,7 @@ export default function SiteFooter() {
             <div className="font-mono text-xs uppercase tracking-[0.25em]">Product</div>
             <ul className="mt-3 space-y-2">
               <li><Link href="/products" className="hover:opacity-70">All Products</Link></li>
-              <li><Link href="/products/receipt-printers" className="hover:opacity-70">Receipt Printers</Link></li>
-              <li><Link href="/products/label-printers" className="hover:opacity-70">Label Printers</Link></li>
+              <li><Link href="/products/printers" className="hover:opacity-70">Printers</Link></li>
               <li><Link href="/products/custom-website" className="hover:opacity-70">Custom Website</Link></li>
               <li><Link href="/products/pickup-screen" className="hover:opacity-70">Pickup Screen</Link></li>
               <li><Link href="/products/phone-agent" className="hover:opacity-70">Phone Agent</Link></li>

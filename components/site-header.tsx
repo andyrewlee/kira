@@ -19,8 +19,7 @@ export function SiteHeader() {
   const crumbs = useMemo(() => {
     const labelFor = (s: string) =>
       ({
-        "receipt-printers": "Receipt Printers",
-        "label-printers": "Label Printers",
+        printers: "Printers",
         website: "Custom Website",
         pickup: "Pickup Screen",
         "phone-agent": "Phone Agent",

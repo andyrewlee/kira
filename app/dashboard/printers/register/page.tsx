@@ -4,18 +4,18 @@ import { useEffect, useState } from "react"
 
 type Device = { id: string; name: string; ip: string; paired?: boolean }
 
-export default function ReceiptPrintersRegisterPage() {
+export default function PrintersRegister() {
   const [loading, setLoading] = useState(false)
   const [list, setList] = useState<Device[]>([])
 
   useEffect(() => {
-    const saved = localStorage.getItem("rp-devices")
+    const saved = localStorage.getItem("printers-devices") || localStorage.getItem("rp-devices")
     if (saved) setList(JSON.parse(saved))
   }, [])
 
   const persist = (next: Device[]) => {
     setList(next)
-    localStorage.setItem("rp-devices", JSON.stringify(next))
+    localStorage.setItem("printers-devices", JSON.stringify(next))
   }
 
   const scan = () => {
@@ -25,7 +25,6 @@ export default function ReceiptPrintersRegisterPage() {
         { id: "d1", name: "Epson TM-T20", ip: "192.168.1.42" },
         { id: "d2", name: "Star TSP100", ip: "192.168.1.77" },
       ]
-      // merge with existing
       const map = new Map<string, Device>()
       ;[...list, ...discovered].forEach(d => map.set(d.id, { ...map.get(d.id), ...d }))
       persist(Array.from(map.values()))
@@ -44,7 +43,7 @@ export default function ReceiptPrintersRegisterPage() {
 
   return (
     <div className="space-y-4">
-      
+      <h1 className="font-mono text-2xl">Printers · Register</h1>
       <div className="rounded-md border p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">Discover printers on your network.</div>

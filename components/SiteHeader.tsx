@@ -88,8 +88,7 @@ export default function SiteHeader() {
   }, [productOpen, positionMenu]);
 
   const productLinks = [
-    { href: "/products/receipt-printers", label: "Receipt Printers", desc: "Fully custom receipts with logos and QR codes.", Icon: Printer },
-    { href: "/products/label-printers", label: "Label Printers", desc: "Barista‑friendly labels that surface modifiers clearly.", Icon: Tag },
+    { href: "/products/printers", label: "Printers", desc: "Design receipts and labels powered by Square.", Icon: Printer },
     { href: "/products/custom-website", label: "Custom Website", desc: "AI‑shaped site grounded in your Square data.", Icon: Globe },
     { href: "/products/pickup-screen", label: "Pickup Screen", desc: "Delightful order boards with voice callouts.", Icon: Monitor },
     { href: "/products/phone-agent", label: "Phone Agent", desc: "Answers calls with accurate info from Square.", Icon: PhoneCall },

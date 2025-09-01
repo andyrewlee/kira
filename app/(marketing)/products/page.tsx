@@ -2,8 +2,7 @@ import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
 
 const products = [
-  { name: "Receipt Printers", slug: "receipt-printers", blurb: "Fully custom receipts from Square orders—logos, QR codes, and seasonal designs." },
-  { name: "Label Printers", slug: "label-printers", blurb: "Barista-friendly labels that show modifiers clearly; QR/barcodes optional." },
+  { name: "Printers", slug: "printers", blurb: "Design receipts and labels powered by Square—logos, QR/barcodes, seasonal designs." },
   { name: "Custom Website", slug: "custom-website", blurb: "AI-shaped site grounded in your Square data. SEO and AI-discovery ready." },
   { name: "Pickup Screen", slug: "pickup-screen", blurb: "Delightful order status screens with optional voice callouts and themes." },
   { name: "Phone Agent", slug: "phone-agent", blurb: "Answers common calls with live info from Square. Review transcripts later." },
