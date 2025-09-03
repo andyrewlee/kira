@@ -81,7 +81,7 @@ export default function FabricEditor({ width, height, scale = 1, sidebarTop }: P
     fabricRef.current = c
     drawGrid(c)
     return () => { c.dispose() }
-  }, [ready])
+  }, [ready, paper.w, paper.h])
 
   // Keep zoom inside Fabric (not CSS transform) so objects aren't visually squished
   useEffect(() => {

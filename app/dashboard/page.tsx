@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 
 type Activity = { t: number; text: string }
@@ -17,16 +17,14 @@ export default function DashboardHome() {
 
   // Prototype: no persistence. Keep default, in-memory state only.
 
-  const onboarding = useMemo(() => {
-    const items: Array<{ done: boolean; label: string; href: string }> = []
-    items.push({ done: square.connected, label: square.connected ? `Square connected (${square.location})` : "Connect Square", href: "/dashboard/settings" })
-    items.push({ done: orderLayouts > 0 || itemLayouts > 0, label: orderLayouts > 0 || itemLayouts > 0 ? "Printer layout created" : "Create your first printer layout", href: "/dashboard/printers/editor" })
-    items.push({ done: printers > 0, label: printers > 0 ? "Printer paired" : "Register a printer", href: "/dashboard/printers/register" })
-    items.push({ done: sites.total > 0, label: sites.total > 0 ? "Website generated" : "Generate your website", href: "/dashboard/website/editor" })
-    items.push({ done: screens > 0, label: screens > 0 ? "Pickup screen added" : "Add a pickup screen", href: "/dashboard/pickup/screens" })
-    items.push({ done: agentPrompt, label: agentPrompt ? "Phone agent prompt set" : "Configure phone agent prompt", href: "/dashboard/phone-agent/editor" })
-    return items
-  }, [square, orderLayouts, printers, itemLayouts, sites, screens, agentPrompt])
+  const onboarding: Array<{ done: boolean; label: string; href: string }> = [
+    { done: square.connected, label: square.connected ? `Square connected (${square.location})` : "Connect Square", href: "/dashboard/settings" },
+    { done: orderLayouts > 0 || itemLayouts > 0, label: orderLayouts > 0 || itemLayouts > 0 ? "Printer layout created" : "Create your first printer layout", href: "/dashboard/printers/editor" },
+    { done: printers > 0, label: printers > 0 ? "Printer paired" : "Register a printer", href: "/dashboard/printers/register" },
+    { done: sites.total > 0, label: sites.total > 0 ? "Website generated" : "Generate your website", href: "/dashboard/website/editor" },
+    { done: screens > 0, label: screens > 0 ? "Pickup screen added" : "Add a pickup screen", href: "/dashboard/pickup/screens" },
+    { done: agentPrompt, label: agentPrompt ? "Phone agent prompt set" : "Configure phone agent prompt", href: "/dashboard/phone-agent/editor" },
+  ]
 
   return (
     <div className="space-y-6">

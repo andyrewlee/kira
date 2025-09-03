@@ -1,10 +1,12 @@
 "use client"
 
 import { useMemo } from "react"
+import { useParams } from "next/navigation"
 import { LOCATIONS } from "../../fixtures"
 
-export default function LocationDetail({ params }: { params: { id: string } }){
-  const loc = useMemo(()=> LOCATIONS.find(l => l.id === params.id), [params.id])
+export default function LocationDetail(){
+  const { id } = useParams<{ id: string }>()
+  const loc = useMemo(()=> LOCATIONS.find(l => l.id === id), [id])
   if (!loc) return <div className="text-sm text-muted-foreground">Not found</div>
   const addr = loc.address
   const jsonLd = {
@@ -24,4 +26,3 @@ export default function LocationDetail({ params }: { params: { id: string } }){
     </div>
   )
 }
-
