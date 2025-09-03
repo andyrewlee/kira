@@ -21,16 +21,16 @@ export async function POST(req: Request) {
   const { Name: printerName, ConnectionType: type, ResponseFile } = parsed.data;
 
   const handlers: Record<ConnectionType, () => Promise<Response>> = {
-    GetRequest: async () => handleGetRequest({ printerName }),
+    GetRequest: async () => handleGetRequest(),
     SetResponse: async () => handleSetResponse({ printerName, responseFile: ResponseFile }),
   };
 
   return handlers[type]();
 }
 
-async function handleGetRequest({ printerName }: { printerName: string }) {
+async function handleGetRequest() {
   // TODO: Fetch pending jobs for `printerName` and pass as `printJobs`.
-  const { template } = getPrinterConfig(printerName);
+  const { template } = getPrinterConfig();
   const xmlBody = await buildGetRequestXml({ template });
   return xml(xmlBody);
 }
@@ -71,7 +71,7 @@ async function buildGetRequestXml({
 type PrinterTemplate = "PerItem" | "Order";
 type PrinterConfig = { template: PrinterTemplate };
 
-function getPrinterConfig(_printerName: string): PrinterConfig {
+function getPrinterConfig(): PrinterConfig {
   // TODO: Replace with real lookup (e.g., Convex or DB) per printer
   // Example: return { template: dbTemplateFor(printerName) }
   return { template: "PerItem" };
