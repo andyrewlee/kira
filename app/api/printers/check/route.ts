@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 async function handleGetRequest({ printerName }: { printerName: string }) {
   // TODO: Fetch pending jobs for `printerName` and pass as `printJobs`.
   const { template } = getPrinterConfig(printerName);
-  const xmlBody = await buildGetRequestXml({ printerName, template });
+  const xmlBody = await buildGetRequestXml({ template });
   return xml(xmlBody);
 }
 
@@ -53,11 +53,9 @@ async function handleSetResponse({
 }
 
 async function buildGetRequestXml({
-  printerName,
   template = "PerItem",
   printJobs,
 }: {
-  printerName: string;
   template?: "PerItem" | "Order";
   printJobs?: PrintJobImage[];
 }): Promise<string> {
@@ -73,18 +71,24 @@ async function buildGetRequestXml({
 type PrinterTemplate = "PerItem" | "Order";
 type PrinterConfig = { template: PrinterTemplate };
 
-function getPrinterConfig(printerName: string): PrinterConfig {
+function getPrinterConfig(_printerName: string): PrinterConfig {
   // TODO: Replace with real lookup (e.g., Convex or DB) per printer
   // Example: return { template: dbTemplateFor(printerName) }
   return { template: "PerItem" };
 }
 
+type EposPrintNode = {
+  Parameter?: Array<{ printjobid?: string[] }>;
+  PrintResponse?: Array<{ response?: Array<{ $?: { success?: string } }> }>;
+};
+
 async function parsePrintedJobIds(responseFile: string): Promise<string[]> {
   try {
     const parsedResponseFile = await parseStringPromise(responseFile);
-    const prints = parsedResponseFile?.["PrintResponseInfo"]?.["ePOSPrint"] ?? [];
+    const prints: EposPrintNode[] =
+      parsedResponseFile?.["PrintResponseInfo"]?.["ePOSPrint"] ?? [];
     const jobIds: string[] = [];
-    prints.forEach((print: any) => {
+    prints.forEach((print) => {
       const receiptId = print?.["Parameter"]?.[0]?.["printjobid"]?.[0];
       const isSuccess = print?.["PrintResponse"]?.[0]?.["response"]?.[0]?.["$"]?.["success"];
       if (isSuccess === "true" && typeof receiptId === "string") jobIds.push(receiptId);
