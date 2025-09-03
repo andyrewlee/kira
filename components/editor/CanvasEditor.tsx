@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import Image from "next/image"
 import VariablesPanel from "@/components/editor/VariablesPanel"
 
 type ElementBase = {
@@ -94,6 +95,18 @@ export default function CanvasEditor({ storageKey, width, height, persist = true
   }), [])
 
   const renderTpl = useCallback((tpl: string) => {
+    type Money = { amount?: number; currency?: string }
+    const currency = (money: unknown) => {
+      try {
+        const m = (money as Partial<Money>) || {}
+        const n = Number(m.amount ?? 0) / 100
+        const c = (m.currency as string | undefined) || 'USD'
+        return new Intl.NumberFormat(undefined, { style: 'currency', currency: c }).format(n)
+      } catch {
+        const m = (money as Partial<Money>) || {}
+        return `$${(Number(m.amount ?? 0) / 100).toFixed(2)}`
+      }
+    }
     try {
       // very small mustache-like replacer: {{path}} and {{#each order.line_items}} .. {{/each}}
       let out = tpl
@@ -111,9 +124,7 @@ export default function CanvasEditor({ storageKey, width, height, persist = true
     } catch { return tpl }
   }, [SAMPLE])
 
-  function currency(money: any) {
-    try { const n = Number(money?.amount||0)/100; const c = money?.currency || 'USD'; return new Intl.NumberFormat(undefined,{style:'currency',currency:c}).format(n) } catch { return `$${(Number(money?.amount||0)/100).toFixed(2)}` }
-  }
+  
 
   const addEl = (type: El["type"]) => {
     const id = Math.random().toString(36).slice(2)
@@ -141,7 +152,7 @@ export default function CanvasEditor({ storageKey, width, height, persist = true
     setEls(list => list.map(el => el.id === id ? { ...el, x: Math.max(0, el.x + dx), y: Math.max(0, el.y + dy) } : el))
   }, [])
 
-  const startDrag = (id: string, e: React.PointerEvent) => {
+  const startDrag = (id: string, e: React.PointerEvent<HTMLDivElement>) => {
     setSelected(id)
     const startX = e.clientX, startY = e.clientY
     const move = (ev: PointerEvent) => onDrag(id, ev.clientX - startX, ev.clientY - startY)
@@ -260,20 +271,24 @@ export default function CanvasEditor({ storageKey, width, height, persist = true
   )
 }
 
-function ElView({ el, selected, onPointerDown, renderTpl }: { el: El; selected: boolean; onPointerDown: (e: React.PointerEvent) => void; renderTpl: (tpl: string)=>string }) {
-  const common = {
+function ElView({ el, selected, onPointerDown, renderTpl }: { el: El; selected: boolean; onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void; renderTpl: (tpl: string)=>string }) {
+  const common: React.HTMLAttributes<HTMLDivElement> = {
     className: `absolute border ${selected ? "border-blue-500" : "border-transparent"}`,
     style: { left: el.x, top: el.y, width: el.w, height: el.h },
     onPointerDown,
-  } as any
+  }
   if (el.type === "text") {
     const t = el as TextEl
     const rendered = t.bind && t.bind.trim() ? renderTpl(t.bind) : t.text
-    return <div {...common} style={{ ...common.style, padding: 2, transform: el.r ? `rotate(${el.r}deg)` : undefined }}><div style={{ fontSize: t.fontSize, fontWeight: t.bold ? 700 : 400, textAlign: t.align as any, whiteSpace: 'pre-wrap' }}>{rendered}</div></div>
+    return <div {...common} style={{ ...(common.style as React.CSSProperties), padding: 2, transform: el.r ? `rotate(${el.r}deg)` : undefined }}><div style={{ fontSize: t.fontSize, fontWeight: t.bold ? 700 : 400, textAlign: t.align as React.CSSProperties['textAlign'], whiteSpace: 'pre-wrap' }}>{rendered}</div></div>
   }
   if (el.type === "image") {
     const i = el as ImageEl
-    return <div {...common} style={{ ...common.style, transform: el.r ? `rotate(${el.r}deg)` : undefined }}><img src={i.src} alt="" className="w-full h-full object-contain" /></div>
+    return (
+      <div {...common} style={{ ...(common.style as React.CSSProperties), transform: el.r ? `rotate(${el.r}deg)` : undefined }} className={`${common.className} relative`}>
+        <Image src={i.src} alt="" fill sizes="100vw" style={{ objectFit: 'contain' }} />
+      </div>
+    )
   }
   if (el.type === "qr") {
     const q = el as QrEl
@@ -281,7 +296,7 @@ function ElView({ el, selected, onPointerDown, renderTpl }: { el: El; selected: 
     return <div {...common} style={{ ...common.style, transform: el.r ? `rotate(${el.r}deg)` : undefined }} className={`${common.className} grid place-items-center bg-[repeating-linear-gradient(45deg,#000_0_4px,#fff_4px_8px)]`}><span className="bg-white px-1 text-[10px]">QR: {q.value}</span></div>
   }
   const l = el as LineEl
-  return <div {...common} style={{ ...common.style, height: l.thickness, transform: el.r ? `rotate(${el.r}deg)` : undefined }} className="bg-black" />
+  return <div {...common} style={{ ...(common.style as React.CSSProperties), height: l.thickness, transform: el.r ? `rotate(${el.r}deg)` : undefined }} className="bg-black" />
 }
 
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -306,7 +321,7 @@ function TextInspector({ el, onChange, renderTpl }: { el: TextEl; onChange: (p: 
       <FieldRow label="Font Size"><input type="number" className="w-20 border rounded px-1" value={el.fontSize} onChange={e => onChange({ fontSize: Number(e.target.value) })} /></FieldRow>
       <FieldRow label="Bold"><input type="checkbox" checked={!!el.bold} onChange={e => onChange({ bold: e.target.checked })} /></FieldRow>
       <FieldRow label="Align">
-        <select className="border rounded px-1" value={el.align} onChange={e => onChange({ align: e.target.value as any })}>
+        <select className="border rounded px-1" value={el.align} onChange={e => onChange({ align: e.target.value as 'left'|'center'|'right' })}>
           <option>left</option><option>center</option><option>right</option>
         </select>
       </FieldRow>
@@ -350,7 +365,7 @@ function LineInspector({ el, onChange }: { el: LineEl; onChange: (p: Partial<Lin
 }
 
 // Minimal SVG generator (MVP)
-function toSVG({ width, height, elements, renderTpl }: { width:number; height:number; elements:any[]; renderTpl:(tpl:string)=>string }){
+function toSVG({ width, height, elements, renderTpl }: { width:number; height:number; elements:El[]; renderTpl:(tpl:string)=>string }){
   const esc = (s:string)=> s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
   const items = elements.map(el => {
     const r = el.r ? ` transform="rotate(${el.r} ${el.x + el.w/2} ${el.y + el.h/2})"` : ''

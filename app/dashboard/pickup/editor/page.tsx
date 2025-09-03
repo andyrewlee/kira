@@ -42,7 +42,7 @@ export default function PickupEditorPage() {
         </div>
         <div className="flex items-center gap-3 text-sm">
           <label className="flex items-center gap-2">Privacy
-            <select className="border rounded px-1" value={privacy} onChange={e => setPrivacy(e.target.value as any)}>
+            <select className="border rounded px-1" value={privacy} onChange={e => setPrivacy(e.target.value as 'name'|'order'|'masked')}>
               <option value="name">Names</option>
               <option value="order">Order numbers</option>
               <option value="masked">Masked</option>
@@ -102,9 +102,9 @@ function seedFromQuery(){
   const d = p.get('demo')
   if (d === 'rush'){
     const out: Order[] = []
-    for (let i=0;i<10;i++) out.push({ id: randId(), displayName: demoName(), status: i<3? 'Finished':'Preparing', updatedAt: new Date(Date.now()-i*60000).toISOString(), items: demoItems() })
+    for (let i=0;i<10;i++) out.push({ id: randId(), displayName: demoName(), status: (i<3? 'Finished':'Preparing') as Order['status'], updatedAt: new Date(Date.now()-i*60000).toISOString(), items: demoItems() })
     return out
   }
-  if (d === 'quiet'){ return [{ id: randId(), displayName: 'Alex', status: 'Preparing', updatedAt: new Date().toISOString(), items: '1× Drip' }] }
+  if (d === 'quiet'){ return [{ id: randId(), displayName: 'Alex', status: 'Preparing' as Order['status'], updatedAt: new Date().toISOString(), items: '1× Drip' }] }
   return seed()
 }

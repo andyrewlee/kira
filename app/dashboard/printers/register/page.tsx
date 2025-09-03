@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 type Device = { id: string; name: string; ip: string; paired?: boolean }
 
@@ -8,15 +8,7 @@ export default function PrintersRegister() {
   const [loading, setLoading] = useState(false)
   const [list, setList] = useState<Device[]>([])
 
-  useEffect(() => {
-    const saved = localStorage.getItem("printers-devices") || localStorage.getItem("rp-devices")
-    if (saved) setList(JSON.parse(saved))
-  }, [])
-
-  const persist = (next: Device[]) => {
-    setList(next)
-    localStorage.setItem("printers-devices", JSON.stringify(next))
-  }
+  const persist = (next: Device[]) => { setList(next) }
 
   const scan = () => {
     setLoading(true)

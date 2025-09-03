@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { IconDashboard, IconFileDescription, IconFileWord, IconFolder, IconListDetails, IconSettings } from "@tabler/icons-react"
+import { IconDashboard, IconFileDescription, IconFolder, IconListDetails, IconSettings } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"

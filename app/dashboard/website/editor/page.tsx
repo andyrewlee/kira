@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
-type Site = { id: string; name: string; html: string; status: "draft" | "live" }
+// Site type removed as unused in editor
 
 export default function WebsiteEditorPage() {
   const [prompt, setPrompt] = useState("")
@@ -64,5 +64,5 @@ function subFrom(text: string) {
   const m = text.match(/sub:\s*([^\n]+)/i)
   return m?.[1]?.trim()
 }
-function readSites(): Site[] { return [] }
+// removed unused helper readSites
 function escapeHtml(s: string){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c] as string))}

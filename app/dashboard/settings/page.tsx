@@ -10,10 +10,9 @@ export default function SettingsPage() {
   const [stage, setStage] = useState<Stage>("idle")
   const [logs, setLogs] = useState<string[]>([])
   const [simulateError, setSimulateError] = useState(false)
-  const [mockOut, setMockOut] = useState<any | null>(null)
+  const [mockOut, setMockOut] = useState<unknown | null>(null)
 
   const clearMock = () => setMockOut(null)
-  const now = useMemo(() => new Date(), [])
 
   const connect = async () => {
     setLogs([]); setStage("redirect"); clearMock()
@@ -78,9 +77,9 @@ export default function SettingsPage() {
         <div className="text-sm">Mock API test</div>
         <div className="flex gap-2">
           <button className="border px-3 py-1.5 text-sm" onClick={listLocations}>List Locations</button>
-          {mockOut && <button className="border px-3 py-1.5 text-sm" onClick={clearMock}>Clear</button>}
+          {Boolean(mockOut) && <button className="border px-3 py-1.5 text-sm" onClick={clearMock}>Clear</button>}
         </div>
-        {mockOut && (
+        {Boolean(mockOut) && (
           <pre className="text-xs bg-muted/10 p-2 rounded overflow-auto">{JSON.stringify(mockOut, null, 2)}</pre>
         )}
       </section>

@@ -9,7 +9,7 @@ export default function PhoneAgentEditorPage() {
   const [q, setQ] = useState("")
   const [chat, setChat] = useState<Turn[]>([])
   const [latencyMs, setLatencyMs] = useState(600)
-  const [history, setHistory] = useState<{ name: string; args: any; result: any }[]>([])
+  const [history, setHistory] = useState<{ name: string; args: Record<string, unknown>; result: unknown }[]>([])
   const [form, setForm] = useState({ location: '', category: '', partySize: 2, when: '' })
   // Load template prompt from query (on mount only)
   // Avoid setState during render to prevent Router update errors
@@ -118,7 +118,7 @@ export default function PhoneAgentEditorPage() {
           {history.length===0 ? <div className="text-muted-foreground">No tool calls yet.</div> : (
             <ul className="space-y-1">
               {history.map((h,i)=> (
-                <li key={i}><span className="font-mono">{h.name}</span> · args {JSON.stringify(h.args)} · result {Array.isArray(h.result)? `${h.result.length} items` : (h.result?.bookingId || 'ok')}</li>
+                <li key={i}><span className="font-mono">{h.name}</span> · args {JSON.stringify(h.args)} · result {Array.isArray(h.result)? `${h.result.length} items` : (typeof h.result === 'object' && h.result && 'bookingId' in (h.result as Record<string, unknown>) ? String((h.result as { bookingId: unknown }).bookingId) : 'ok')}</li>
               ))}
             </ul>
           )}
@@ -128,7 +128,7 @@ export default function PhoneAgentEditorPage() {
   )
 }
 
-function synthesize(prompt: string, q: string, data: any) {
+function synthesize(prompt: string, q: string, data: { hours: string; items: string[] }) {
   const lq = q.toLowerCase()
   if (lq.includes("hour")) return `We are open ${data.hours}.`
   if (lq.includes("menu") || lq.includes("item")) return `Popular items include ${data.items.join(", ")}.`

@@ -7,7 +7,7 @@ type Props = {
 }
 
 export default function VariablesPanel({ onInsert }: Props) {
-  const [vars, setVars] = useState<Record<string, any>>({})
+  const [vars, setVars] = useState<Record<string, unknown>>({})
 
   // Inline sample variables; replace with live data when wired.
   useEffect(() => {
@@ -38,14 +38,14 @@ export default function VariablesPanel({ onInsert }: Props) {
     setVars(SAMPLE)
   }, [])
 
-  function recurse(obj: any, prefix: string[] = []): Array<[string, string]> {
+  function recurse(obj: unknown, prefix: string[] = []): Array<[string, string]> {
     const out: Array<[string, string]> = []
     if (Array.isArray(obj)) {
       out.push([`{{${prefix.join(".")}.length}}`, `${obj.length}`])
       return out
     }
     if (typeof obj === "object" && obj) {
-      for (const [k, v] of Object.entries(obj)) {
+      for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
         if (typeof v === "object") out.push(...recurse(v, [...prefix, k]))
         else out.push([`{{${[...prefix, k].join(".")}}}`, String(v)])
       }

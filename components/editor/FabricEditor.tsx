@@ -10,20 +10,64 @@ type Props = {
   sidebarTop?: React.ReactNode
 }
 
+type FabricObject = {
+  set: (...args: [key: string, value: unknown] | [patch: Record<string, unknown>]) => void
+  get?: (key: string) => unknown
+  on?: (event: string, cb: () => void) => void
+  setCoords?: () => void
+  canvas?: FabricCanvas
+  type?: string
+  left?: number
+  top?: number
+  height?: number
+  angle?: number
+  getBoundingRect?: (arg1?: boolean, arg2?: boolean) => { top: number; height: number }
+}
+
+type FabricTextbox = FabricObject & { text?: string; fontSize?: number; width?: number }
+type FabricGroup = FabricObject
+
+type FabricCanvas = {
+  setWidth: (n: number) => void
+  setHeight: (n: number) => void
+  on: (event: string, handler: (e: { selected?: FabricObject[] }) => void) => void
+  getObjects: (type?: string) => FabricObject[]
+  add: (obj: FabricObject) => void
+  setActiveObject: (obj: FabricObject) => void
+  remove: (obj: FabricObject) => void
+  insertAt: (obj: FabricObject, index: number) => void
+  requestRenderAll: () => void
+  dispose: () => void
+  setZoom: (n: number) => void
+  toDataURL: (opts: { format: 'png' }) => string
+  getWidth: () => number
+  getHeight: () => number
+  setBackgroundImage: (url: string, cb: () => void, opts: Record<string, unknown>) => void
+}
+
+type FabricNS = {
+  Canvas: new (el: HTMLCanvasElement, opts: Record<string, unknown>) => FabricCanvas
+  Textbox: new (text: string, opts: Record<string, unknown>) => FabricTextbox
+  Rect: new (opts: Record<string, unknown>) => FabricObject
+  Text: new (text: string, opts: Record<string, unknown>) => FabricObject
+  Group: new (objs: FabricObject[], opts: Record<string, unknown>) => FabricGroup
+  Image: { fromURL: (url: string, cb: (img: FabricObject) => void) => void }
+}
+
 declare global {
-  interface Window { fabric: any }
+  interface Window { fabric: FabricNS }
 }
 
 export default function FabricEditor({ width, height, scale = 1, sidebarTop }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const fabricRef = useRef<any>(null)
+  const fabricRef = useRef<FabricCanvas | null>(null)
   const [ready, setReady] = useState(false)
-  const [selected, setSelected] = useState<any>(null)
+  const [selected, setSelected] = useState<FabricObject | null>(null)
   const [dataText, setDataText] = useState(JSON.stringify(SAMPLE_ORDER, null, 2))
   const [paper, setPaper] = useState<{ w:number; h:number; preset:string }>({ w: width, h: height, preset: 'm30-80' })
   const [zoom, setZoom] = useState(scale)
   const [bindingDraft, setBindingDraft] = useState('')
-  const data = useMemo(() => { try { return JSON.parse(dataText) } catch { return {} } }, [dataText])
+  const data = useMemo<unknown>(() => { try { return JSON.parse(dataText) } catch { return {} } }, [dataText])
 
   useEffect(() => {
     if (!ready || !canvasRef.current || !window.fabric) return
@@ -31,8 +75,8 @@ export default function FabricEditor({ width, height, scale = 1, sidebarTop }: P
     const c = new fabric.Canvas(canvasRef.current, { preserveObjectStacking: true, selection: true })
     c.setWidth(paper.w)
     c.setHeight(paper.h)
-    c.on('selection:created', (e: any) => setSelected(e.selected?.[0] || null))
-    c.on('selection:updated', (e: any) => setSelected(e.selected?.[0] || null))
+    c.on('selection:created', (e: { selected?: FabricObject[] }) => setSelected(e.selected?.[0] || null))
+    c.on('selection:updated', (e: { selected?: FabricObject[] }) => setSelected(e.selected?.[0] || null))
     c.on('selection:cleared', () => setSelected(null))
     fabricRef.current = c
     drawGrid(c)
@@ -49,15 +93,15 @@ export default function FabricEditor({ width, height, scale = 1, sidebarTop }: P
   // Re-evaluate bindings and repeaters when data JSON changes
   useEffect(() => {
     const c = fabricRef.current; if (!c) return
-    c.getObjects('textbox').forEach((obj: any) => {
+    c.getObjects('textbox').forEach((obj) => {
       const bind = obj.get?.('binding')
-      if (bind){
+      if (typeof bind === 'string'){
         const { text, unresolved } = evalBindingWithStatus(bind, data)
         obj.set('text', text)
         obj.set('fill', unresolved ? '#b91c1c' : '#000')
       }
     })
-    c.getObjects().forEach((obj:any) => { if (obj.get && obj.get('kind') === 'repeater') rerenderRepeater(obj, data) })
+    c.getObjects().forEach((obj) => { if (obj.get && obj.get('kind') === 'repeater') rerenderRepeater(obj, data) })
     expandCanvasToFit(c)
     c.requestRenderAll()
   }, [data])
@@ -65,13 +109,13 @@ export default function FabricEditor({ width, height, scale = 1, sidebarTop }: P
   // Re-evaluate on data change
   useEffect(() => {
     const c = fabricRef.current; if (!c) return
-    c.getObjects('textbox').forEach((obj: any) => {
-      const bind = obj.get?.('binding'); if (!bind) return
+    c.getObjects('textbox').forEach((obj) => {
+      const bind = obj.get?.('binding'); if (typeof bind !== 'string') return
       const { text, unresolved } = evalBindingWithStatus(bind, data)
       obj.set('text', text)
       obj.set('fill', unresolved ? '#b91c1c' : '#000')
     })
-    c.getObjects().forEach((obj:any) => { if (obj.get && obj.get('kind') === 'repeater') rerenderRepeater(obj, data) })
+    c.getObjects().forEach((obj) => { if (obj.get && obj.get('kind') === 'repeater') rerenderRepeater(obj, data) })
     expandCanvasToFit(c)
     c.requestRenderAll()
   }, [data])
@@ -79,7 +123,10 @@ export default function FabricEditor({ width, height, scale = 1, sidebarTop }: P
   // Sync binding draft from selected textbox
   useEffect(() => {
     if (selected && selected.type === 'textbox') {
-      try { setBindingDraft(selected.get?.('binding') || selected.text || '') } catch {}
+      try {
+        const tb = selected as FabricTextbox
+        setBindingDraft((tb.get?.('binding') as string) || tb.text || '')
+      } catch {}
     }
   }, [selected])
 
@@ -87,14 +134,14 @@ export default function FabricEditor({ width, height, scale = 1, sidebarTop }: P
     const c = fabricRef.current; if (!c) return
     const t = new window.fabric.Textbox('Order {{order.id}}', { left: 24, top: 24, fontSize: 18, fill: '#000', width: 320 })
     renderBindingToTextbox(t, 'Order {{order.id}}', data)
-    t.on('editing:exited', () => { const bind = String(t.text||''); renderBindingToTextbox(t, bind, data); c.requestRenderAll(); expandCanvasToFit(c) })
+    t.on?.('editing:exited', () => { const bind = String((t as FabricTextbox).text||''); renderBindingToTextbox(t, bind, data); c.requestRenderAll(); expandCanvasToFit(c) })
     c.add(t); c.setActiveObject(t); setSelected(t); expandCanvasToFit(c)
   }
   const addImage = async () => {
     const url = prompt('Image URL (can be data URL):') || ''
     if (!url) return
     const c = fabricRef.current; if (!c) return
-    window.fabric.Image.fromURL(url, (img: any) => { img.set({ left: 40, top: 80, scaleX: 0.5, scaleY: 0.5 }); c.add(img); c.setActiveObject(img); setSelected(img); expandCanvasToFit(c) })
+    window.fabric.Image.fromURL(url, (img) => { img.set({ left: 40, top: 80, scaleX: 0.5, scaleY: 0.5 }); c.add(img); c.setActiveObject(img); setSelected(img); expandCanvasToFit(c) })
   }
   const addQR = () => {
     const c = fabricRef.current; if (!c) return
@@ -119,7 +166,7 @@ export default function FabricEditor({ width, height, scale = 1, sidebarTop }: P
     const a = document.createElement('a'); a.href = url; a.download = 'layout.png'; a.click()
   }
 
-  const updateSelected = (patch: any) => {
+  const updateSelected = (patch: Record<string, unknown>) => {
     const obj = selected; if (!obj) return
     obj.set(patch); obj.canvas?.requestRenderAll(); setSelected({ ...obj })
     const c = fabricRef.current; if (c) expandCanvasToFit(c)
@@ -231,7 +278,7 @@ function setPaperSize(partial: { w?: number; h?: number }){
                     className="border px-2 py-1"
                     onClick={()=>{
                       renderBindingToTextbox(selected, bindingDraft, data)
-                      try { selected.setCoords() } catch {}
+                      try { selected.setCoords?.() } catch {}
                       const c = selected?.canvas; if (c) { expandCanvasToFit(c); c.requestRenderAll() }
                       setSelected({ ...selected })
                     }}
@@ -239,17 +286,19 @@ function setPaperSize(partial: { w?: number; h?: number }){
                     Save
                   </button>
                 </div>
-                <label className="flex items-center justify-between gap-2">Font Size<input type="number" className="w-24 border rounded px-1" value={selected.fontSize||16} onChange={e=>updateSelected({ fontSize: Number(e.target.value) })} /></label>
+                {(() => { const tb = selected as FabricTextbox; return (
+                  <label className="flex items-center justify-between gap-2">Font Size<input type="number" className="w-24 border rounded px-1" value={tb.fontSize||16} onChange={e=>updateSelected({ fontSize: Number(e.target.value) })} /></label>
+                )})()}
               </>
             )}
             {selected?.get && selected.get('kind') === 'repeater' && (
               <>
-                <label className="flex items-center justify-between gap-2">Path<input className="border rounded px-2 py-1" value={selected.get('path')||'order.line_items'} onChange={e=>{ selected.set('path', e.target.value); rerenderRepeater(selected, data) }} /></label>
+                <label className="flex items-center justify-between gap-2">Path<input className="border rounded px-2 py-1" value={String(selected.get('path')||'order.line_items')} onChange={e=>{ selected.set('path', e.target.value); rerenderRepeater(selected, data) }} /></label>
                 <label className="flex items-center justify-between gap-2">Row Template</label>
-                <textarea className="w-full border rounded p-2 text-xs" rows={3} value={selected.get('rowTpl')||''} onChange={e=>{ selected.set('rowTpl', e.target.value); rerenderRepeater(selected, data) }} />
-                <label className="flex items-center justify-between gap-2">Font Size<input type="number" className="w-24 border rounded px-1" value={selected.get('fontSize')||14} onChange={e=>{ selected.set('fontSize', Number(e.target.value)); rerenderRepeater(selected, data) }} /></label>
-                <label className="flex items-center justify-between gap-2">Width<input type="number" className="w-24 border rounded px-1" value={selected.get('width')||360} onChange={e=>{ selected.set('width', Number(e.target.value)); rerenderRepeater(selected, data) }} /></label>
-                <label className="flex items-center justify-between gap-2">Line Gap<input type="number" className="w-24 border rounded px-1" value={selected.get('gap')||4} onChange={e=>{ selected.set('gap', Number(e.target.value)); rerenderRepeater(selected, data) }} /></label>
+                <textarea className="w-full border rounded p-2 text-xs" rows={3} value={String(selected.get('rowTpl')||'')} onChange={e=>{ selected.set('rowTpl', e.target.value); rerenderRepeater(selected, data) }} />
+                <label className="flex items-center justify-between gap-2">Font Size<input type="number" className="w-24 border rounded px-1" value={Number(selected.get('fontSize')||14)} onChange={e=>{ selected.set('fontSize', Number(e.target.value)); rerenderRepeater(selected, data) }} /></label>
+                <label className="flex items-center justify-between gap-2">Width<input type="number" className="w-24 border rounded px-1" value={Number(selected.get('width')||360)} onChange={e=>{ selected.set('width', Number(e.target.value)); rerenderRepeater(selected, data) }} /></label>
+                <label className="flex items-center justify-between gap-2">Line Gap<input type="number" className="w-24 border rounded px-1" value={Number(selected.get('gap')||4)} onChange={e=>{ selected.set('gap', Number(e.target.value)); rerenderRepeater(selected, data) }} /></label>
               </>
             )}
             <label className="flex items-center justify-between gap-2">Angle<input type="number" className="w-24 border rounded px-1" value={Math.round(selected.angle||0)} onChange={e=>updateSelected({ angle: Number(e.target.value) })} /></label>
@@ -260,7 +309,7 @@ function setPaperSize(partial: { w?: number; h?: number }){
   )
 }
 
-function drawGrid(c: any){
+function drawGrid(c: FabricCanvas){
   const w = c.getWidth(); const h = c.getHeight(); const step = 8
   const grid = document.createElement('canvas'); grid.width = w; grid.height = h
   const g = grid.getContext('2d')!
@@ -269,13 +318,14 @@ function drawGrid(c: any){
   for (let x=0;x<w;x+=step){ g.beginPath(); g.moveTo(x+0.5,0); g.lineTo(x+0.5,h); g.stroke() }
   for (let y=0;y<h;y+=step){ g.beginPath(); g.moveTo(0,y+0.5); g.lineTo(w,y+0.5); g.stroke() }
   const url = grid.toDataURL('image/png')
+  // @ts-expect-error fabric types not available
   c.setBackgroundImage(url, c.renderAll.bind(c), { originX:'left', originY:'top', backgroundVpt: true })
 }
 
 function mmToPx(mm:number, dpi=203){ return Math.round(mm*dpi/25.4) }
 function toMm(px:number, dpi=203){ return Math.round((px*25.4/dpi)*10)/10 }
 
-function applyCanvasSize(c:any, w:number, h:number){ c.setWidth(w); c.setHeight(h); drawGrid(c); c.requestRenderAll() }
+function applyCanvasSize(c: FabricCanvas, w:number, h:number){ c.setWidth(w); c.setHeight(h); drawGrid(c); c.requestRenderAll() }
 
 function clamp(n:number, min:number, max:number){ return Math.max(min, Math.min(max, n)) }
 
@@ -293,37 +343,40 @@ const SAMPLE_ORDER = {
   }
 }
 
-function currency(m: any){ try{ const n=Number(m?.amount||0)/100; const c=m?.currency||'USD'; return new Intl.NumberFormat(undefined,{style:'currency',currency:c}).format(n)}catch{return '$0.00'} }
-function evalBindingWithStatus(tpl: string, data: any): { text:string; unresolved:boolean }{
+type Money = { amount?: number; currency?: string }
+function currency(m: unknown){ try{ const v = (m as Money)||{}; const n=Number(v.amount||0)/100; const c=v.currency||'USD'; return new Intl.NumberFormat(undefined,{style:'currency',currency:c}).format(n)}catch{return '$0.00'} }
+function evalBindingWithStatus(tpl: string, data: unknown): { text:string; unresolved:boolean }{
   try{
     let out = tpl
-    out = out.replace(/{{\s*currency\s+order\.total_money\s*}}/g, currency(data?.order?.total_money))
-    out = out.replace(/{{\s*order\.id\s*}}/g, data?.order?.id||'')
-    out = out.replace(/{{\s*order\.number\s*}}/g, data?.order?.number||'')
-    out = out.replace(/{{\s*order\.customer\.name\s*}}/g, data?.order?.customer?.name||'')
+    const d = data as { order?: { total_money?: Money; id?: string; number?: string; customer?: { name?: string }; line_items?: Array<{ quantity?: string; name?: string; total_money?: Money }> } }
+    out = out.replace(/{{\s*currency\s+order\.total_money\s*}}/g, currency(d?.order?.total_money))
+    out = out.replace(/{{\s*order\.id\s*}}/g, d?.order?.id||'')
+    out = out.replace(/{{\s*order\.number\s*}}/g, d?.order?.number||'')
+    out = out.replace(/{{\s*order\.customer\.name\s*}}/g, d?.order?.customer?.name||'')
     out = out.replace(/{{#each\s+order\.line_items}}([\s\S]*?){{\/each}}/g, (_m, inner) => {
-      const items = (data?.order?.line_items||[]).slice(0,50)
-      return items.map((it:any) => inner.replace(/{{\s*quantity\s*}}/g,it.quantity||'').replace(/{{\s*name\s*}}/g,it.name||'').replace(/{{\s*currency\s+total_money\s*}}/g,currency(it.total_money))).join('\n')
+      const items = (d?.order?.line_items||[]).slice(0,50)
+      return items.map((it) => inner.replace(/{{\s*quantity\s*}}/g,it.quantity||'').replace(/{{\s*name\s*}}/g,it.name||'').replace(/{{\s*currency\s+total_money\s*}}/g,currency(it.total_money))).join('\n')
     })
     const unresolved = /{{[^}]+}}/.test(out)
     return { text: out, unresolved }
   }catch{return { text: tpl, unresolved: true }}
 }
-function renderBindingToTextbox(tb:any, binding:string, data:any){
+function renderBindingToTextbox(tb: FabricObject, binding:string, data: unknown){
   tb.set('binding', binding)
   const { text, unresolved } = evalBindingWithStatus(binding, data)
   tb.set('text', text)
   tb.set('fill', unresolved ? '#b91c1c' : '#000')
 }
 
-function getAtPath(obj:any, path:string){
-  return path.split('.').reduce((acc, key) => (acc && key in acc ? acc[key] : undefined), obj)
+function getAtPath(obj: unknown, path: string): unknown {
+  return path.split('.').reduce<unknown>((acc, key) => (acc && typeof acc === 'object' && key in (acc as Record<string, unknown>) ? (acc as Record<string, unknown>)[key] : undefined), obj)
 }
 
-function makeRepeaterGroup({ left, top, path, rowTpl, fontSize, width, gap }:{ left:number; top:number; path:string; rowTpl:string; fontSize:number; width:number; gap:number }, data:any){
+function makeRepeaterGroup({ left, top, path, rowTpl, fontSize, width, gap }:{ left:number; top:number; path:string; rowTpl:string; fontSize:number; width:number; gap:number }, data: unknown){
   const fabric = window.fabric
-  const items = Array.isArray(getAtPath(data, path)) ? getAtPath(data, path) : []
-  const lines:any[] = []
+  const raw = getAtPath(data, path)
+  const items: Array<{ quantity?: string; name?: string; total_money?: Money }> = Array.isArray(raw) ? (raw as Array<{ quantity?: string; name?: string; total_money?: Money }>) : []
+  const lines: FabricObject[] = []
   let y = 0
   for (const it of items){
     const text = rowTpl
@@ -332,21 +385,21 @@ function makeRepeaterGroup({ left, top, path, rowTpl, fontSize, width, gap }:{ l
       .replace(/{{\s*currency\s+total_money\s*}}/g, currency(it.total_money))
     const tb = new fabric.Textbox(text, { left, top: top + y, fontSize, width, fill:'#000' })
     lines.push(tb)
-    y += tb.height + gap
+    y += (tb.height || 0) + gap
   }
   const g = new fabric.Group(lines, { left, top })
   g.set('kind','repeater'); g.set('path', path); g.set('rowTpl', rowTpl); g.set('fontSize', fontSize); g.set('width', width); g.set('gap', gap)
   return g
 }
 
-function rerenderRepeater(group:any, data:any){
+function rerenderRepeater(group: FabricObject, data: unknown){
   const c = group.canvas; if (!c) return
   const left = group.left||0; const top = group.top||0
-  const path = group.get('path')||'order.line_items'
-  const rowTpl = group.get('rowTpl')||'{{quantity}}× {{name}} — {{currency total_money}}'
-  const fontSize = group.get('fontSize')||14
-  const width = group.get('width')||360
-  const gap = group.get('gap')||4
+  const path = (group.get?.('path') as string) || 'order.line_items'
+  const rowTpl = (group.get?.('rowTpl') as string) || '{{quantity}}× {{name}} — {{currency total_money}}'
+  const fontSize = (group.get?.('fontSize') as number) || 14
+  const width = (group.get?.('width') as number) || 360
+  const gap = (group.get?.('gap') as number) || 4
   const index = c.getObjects().indexOf(group)
   c.remove(group)
   const g = makeRepeaterGroup({ left, top, path, rowTpl, fontSize, width, gap }, data)
@@ -356,13 +409,13 @@ function rerenderRepeater(group:any, data:any){
   expandCanvasToFit(c)
 }
 
-function contentBottom(c:any){
+function contentBottom(c: FabricCanvas){
   let bottom = 0
-  c.getObjects().forEach((o:any) => { const r = o.getBoundingRect(true, true); bottom = Math.max(bottom, r.top + r.height) })
+  c.getObjects().forEach((o) => { const r = o.getBoundingRect?.(true, true) || { top: 0, height: 0 }; bottom = Math.max(bottom, r.top + r.height) })
   return bottom
 }
 
-function expandCanvasToFit(c:any){
+function expandCanvasToFit(c: FabricCanvas){
   const needed = contentBottom(c) + 48
   const currentW = c.getWidth(); const currentH = c.getHeight()
   if (needed > currentH){ applyCanvasSize(c, currentW, needed) }

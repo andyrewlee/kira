@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Authenticated, Unauthenticated } from "convex/react";
-import { SignUpButton, SignInButton } from "@clerk/nextjs";
 import { Clock, ShieldCheck, Webhook, ListChecks, CreditCard, Settings as SettingsIcon } from "lucide-react";
 import SiteFooter from "@/components/SiteFooter";
 

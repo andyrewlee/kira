@@ -5,8 +5,8 @@ import { useState } from "react"
 type Screen = { id: string; name: string }
 
 export default function PickupScreensPage() {
-  const [list, setList] = useState<Screen[]>(JSON.parse(localStorage.getItem("pickup-screens") || "[]"))
-  const write = (next: Screen[]) => { setList(next); localStorage.setItem("pickup-screens", JSON.stringify(next)) }
+  const [list, setList] = useState<Screen[]>([])
+  const write = (next: Screen[]) => { setList(next) }
   const add = () => { const name = prompt("Screen name", `Display ${list.length + 1}`); if (!name) return; write([...list, { id: Math.random().toString(36).slice(2), name }]) }
   const remove = (id: string) => write(list.filter(x => x.id !== id))
   return (

@@ -10,12 +10,12 @@ export default function PrintersTemplates() {
     { id: "sku", name: "Item SKU Label", desc: "SKU + name + QR." },
   ]
 
-  const useOrderTemplate = (id: string) => {
+  const goToOrderTemplate = (id: string) => {
     const t = id === 'order-number' ? 'order-number' : 'order-simple'
     window.location.href = `/dashboard/printers/editor?template=${t}`
   }
 
-  const useItemTemplate = (id: string) => {
+  const goToItemTemplate = (id: string) => {
     const t = id === 'price' ? 'item-price' : 'item-sku'
     window.location.href = `/dashboard/printers/editor?template=${t}`
   }
@@ -29,7 +29,7 @@ export default function PrintersTemplates() {
             <div key={t.id} className="border rounded-md p-3">
               <div className="font-medium">{t.name}</div>
               <div className="text-sm text-muted-foreground">{t.desc}</div>
-              <button className="mt-2 border px-2 py-1 text-sm" onClick={() => useOrderTemplate(t.id)}>Use Template</button>
+              <button className="mt-2 border px-2 py-1 text-sm" onClick={() => goToOrderTemplate(t.id)}>Use Template</button>
             </div>
           ))}
         </div>
@@ -41,7 +41,7 @@ export default function PrintersTemplates() {
             <div key={t.id} className="border rounded-md p-3">
               <div className="font-medium">{t.name}</div>
               <div className="text-sm text-muted-foreground">{t.desc}</div>
-              <button className="mt-2 border px-2 py-1 text-sm" onClick={() => useItemTemplate(t.id)}>Use Template</button>
+              <button className="mt-2 border px-2 py-1 text-sm" onClick={() => goToItemTemplate(t.id)}>Use Template</button>
             </div>
           ))}
         </div>

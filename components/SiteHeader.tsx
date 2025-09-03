@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Authenticated, Unauthenticated } from "convex/react";
-import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import { Printer, Tag, Globe, ShoppingCart, Monitor, PhoneCall } from "lucide-react";
+import { SignInButton, UserButton } from "@clerk/nextjs";
+import { Printer, Globe, Monitor, PhoneCall } from "lucide-react";
 
 const nav = [
   { href: "/how-it-works", label: "How it works" },
@@ -70,18 +70,15 @@ export default function SiteHeader() {
     const raf = requestAnimationFrame(positionMenu);
     const t = setTimeout(positionMenu, 200);
     // Some browsers expose font loading API
-    // @ts-ignore
-    if (document.fonts && document.fonts.ready) {
-      // @ts-ignore
-      document.fonts.ready.then(() => positionMenu());
-    }
-    const onResize = () => positionMenu();
-    const onScroll = () => positionMenu();
+    const docWithFonts = document as unknown as { fonts?: { ready?: Promise<unknown> } }
+    docWithFonts.fonts?.ready?.then(() => positionMenu())
+    const onResize: EventListener = () => positionMenu();
+    const onScroll: EventListener = () => positionMenu();
     window.addEventListener("resize", onResize);
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll as EventListener, { passive: true } as AddEventListenerOptions);
     return () => {
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("scroll", onScroll as any);
+      window.removeEventListener("scroll", onScroll as EventListener);
       cancelAnimationFrame(raf);
       clearTimeout(t);
     };
@@ -232,6 +229,7 @@ export default function SiteHeader() {
             id="products-mega-menu"
             role="menu"
             className="hidden md:block absolute left-0 right-0 top-full border-2 border-black bg-white shadow-[8px_8px_0_0_#000]"
+            style={menuStyle}
             onMouseEnter={() => setProductOpen(true)}
             onMouseLeave={() => setProductOpen(false)}
           >

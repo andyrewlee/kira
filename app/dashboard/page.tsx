@@ -1,34 +1,21 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 
 type Activity = { t: number; text: string }
 
 export default function DashboardHome() {
-  const [square, setSquare] = useState<{ connected: boolean; location?: string }>({ connected: false })
-  const [orderLayouts, setOrderLayouts] = useState(0)
-  const [itemLayouts, setItemLayouts] = useState(0)
-  const [printers, setPrinters] = useState(0)
-  const [sites, setSites] = useState({ total: 0, live: 0 })
-  const [screens, setScreens] = useState(0)
-  const [agentPrompt, setAgentPrompt] = useState(false)
-  const [activity, setActivity] = useState<Activity[]>([])
+  const square = { connected: false as boolean, location: undefined as string | undefined }
+  const orderLayouts = 0
+  const itemLayouts = 0
+  const printers = 0
+  const sites = { total: 0, live: 0 }
+  const screens = 0
+  const agentPrompt = false
+  const [activity] = useState<Activity[]>([])
 
-  useEffect(() => {
-    try {
-      const conn = JSON.parse(localStorage.getItem("square-conn") || "{}")
-      setSquare({ connected: !!conn.connected, location: conn.location || undefined })
-      setOrderLayouts((JSON.parse(localStorage.getItem("order-layouts") || "[]") as any[]).length)
-      setItemLayouts((JSON.parse(localStorage.getItem("item-layouts") || "[]") as any[]).length)
-      setPrinters((JSON.parse(localStorage.getItem("printers-devices") || localStorage.getItem("rp-devices") || "[]") as any[]).filter((d: any) => d.paired).length)
-      const s = JSON.parse(localStorage.getItem("sites") || "[]") as any[]
-      setSites({ total: s.length, live: s.filter(x => x.status === "live").length })
-      setScreens((JSON.parse(localStorage.getItem("pickup-screens") || "[]") as any[]).length)
-      setAgentPrompt(!!localStorage.getItem("agent-prompt"))
-      setActivity(JSON.parse(localStorage.getItem("activity") || "[]"))
-    } catch {}
-  }, [])
+  // Prototype: no persistence. Keep default, in-memory state only.
 
   const onboarding = useMemo(() => {
     const items: Array<{ done: boolean; label: string; href: string }> = []
