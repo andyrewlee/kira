@@ -9,6 +9,7 @@ type ElementBase = {
   y: number
   w: number
   h: number
+  r?: number
   type: "text" | "image" | "qr" | "line"
 }
 
@@ -174,6 +175,15 @@ export default function CanvasEditor({ storageKey, width, height, persist = true
     a.click()
   }
 
+  const exportSVG = () => {
+    const svg = toSVG({ width, height, elements: els, renderTpl })
+    const blob = new Blob([svg], { type: 'image/svg+xml' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `${storageKey}.svg`
+    a.click()
+  }
+
   const importJSON = (file: File) => {
     const r = new FileReader()
     r.onload = () => {
@@ -207,6 +217,7 @@ export default function CanvasEditor({ storageKey, width, height, persist = true
           <div className="flex gap-2">
             <button className="border px-2 py-1 text-sm" onClick={clearAll}>Clear</button>
             <button className="border px-2 py-1 text-sm" onClick={exportJSON}>Export</button>
+            <button className="border px-2 py-1 text-sm" onClick={exportSVG}>Export SVG</button>
             <label className="border px-2 py-1 text-sm cursor-pointer">
               Import
               <input type="file" accept="application/json" className="hidden" onChange={e => e.target.files && importJSON(e.target.files[0])} />
@@ -258,19 +269,19 @@ function ElView({ el, selected, onPointerDown, renderTpl }: { el: El; selected: 
   if (el.type === "text") {
     const t = el as TextEl
     const rendered = t.bind && t.bind.trim() ? renderTpl(t.bind) : t.text
-    return <div {...common} style={{ ...common.style, padding: 2 }}><div style={{ fontSize: t.fontSize, fontWeight: t.bold ? 700 : 400, textAlign: t.align as any, whiteSpace: 'pre-wrap' }}>{rendered}</div></div>
+    return <div {...common} style={{ ...common.style, padding: 2, transform: el.r ? `rotate(${el.r}deg)` : undefined }}><div style={{ fontSize: t.fontSize, fontWeight: t.bold ? 700 : 400, textAlign: t.align as any, whiteSpace: 'pre-wrap' }}>{rendered}</div></div>
   }
   if (el.type === "image") {
     const i = el as ImageEl
-    return <div {...common}><img src={i.src} alt="" className="w-full h-full object-contain" /></div>
+    return <div {...common} style={{ ...common.style, transform: el.r ? `rotate(${el.r}deg)` : undefined }}><img src={i.src} alt="" className="w-full h-full object-contain" /></div>
   }
   if (el.type === "qr") {
     const q = el as QrEl
     // Simple placeholder for QR
-    return <div {...common} className={`${common.className} grid place-items-center bg-[repeating-linear-gradient(45deg,#000_0_4px,#fff_4px_8px)]`}><span className="bg-white px-1 text-[10px]">QR: {q.value}</span></div>
+    return <div {...common} style={{ ...common.style, transform: el.r ? `rotate(${el.r}deg)` : undefined }} className={`${common.className} grid place-items-center bg-[repeating-linear-gradient(45deg,#000_0_4px,#fff_4px_8px)]`}><span className="bg-white px-1 text-[10px]">QR: {q.value}</span></div>
   }
   const l = el as LineEl
-  return <div {...common} style={{ ...common.style, height: l.thickness }} className="bg-black" />
+  return <div {...common} style={{ ...common.style, height: l.thickness, transform: el.r ? `rotate(${el.r}deg)` : undefined }} className="bg-black" />
 }
 
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -301,6 +312,7 @@ function TextInspector({ el, onChange, renderTpl }: { el: TextEl; onChange: (p: 
       </FieldRow>
       <FieldRow label="Width"><input type="number" className="w-24 border rounded px-1" value={el.w} onChange={e => onChange({ w: Number(e.target.value) })} /></FieldRow>
       <FieldRow label="Height"><input type="number" className="w-24 border rounded px-1" value={el.h} onChange={e => onChange({ h: Number(e.target.value) })} /></FieldRow>
+      <FieldRow label="Rotate"><input type="number" className="w-24 border rounded px-1" value={el.r || 0} onChange={e => onChange({ r: Number(e.target.value) })} /></FieldRow>
     </div>
   )
 }
@@ -311,6 +323,7 @@ function ImageInspector({ el, onChange }: { el: ImageEl; onChange: (p: Partial<I
       <FieldRow label="Src"><input className="border rounded px-2 py-1 text-sm w-full" value={el.src} onChange={e => onChange({ src: e.target.value })} /></FieldRow>
       <FieldRow label="Width"><input type="number" className="w-24 border rounded px-1" value={el.w} onChange={e => onChange({ w: Number(e.target.value) })} /></FieldRow>
       <FieldRow label="Height"><input type="number" className="w-24 border rounded px-1" value={el.h} onChange={e => onChange({ h: Number(e.target.value) })} /></FieldRow>
+      <FieldRow label="Rotate"><input type="number" className="w-24 border rounded px-1" value={el.r || 0} onChange={e => onChange({ r: Number(e.target.value) })} /></FieldRow>
     </div>
   )
 }
@@ -321,6 +334,7 @@ function QrInspector({ el, onChange }: { el: QrEl; onChange: (p: Partial<QrEl>) 
       <FieldRow label="Value"><input className="border rounded px-2 py-1 text-sm w-full" value={el.value} onChange={e => onChange({ value: e.target.value })} /></FieldRow>
       <FieldRow label="Size W"><input type="number" className="w-24 border rounded px-1" value={el.w} onChange={e => onChange({ w: Number(e.target.value) })} /></FieldRow>
       <FieldRow label="Size H"><input type="number" className="w-24 border rounded px-1" value={el.h} onChange={e => onChange({ h: Number(e.target.value) })} /></FieldRow>
+      <FieldRow label="Rotate"><input type="number" className="w-24 border rounded px-1" value={el.r || 0} onChange={e => onChange({ r: Number(e.target.value) })} /></FieldRow>
     </div>
   )
 }
@@ -330,6 +344,31 @@ function LineInspector({ el, onChange }: { el: LineEl; onChange: (p: Partial<Lin
     <div className="space-y-2">
       <FieldRow label="Thickness"><input type="number" className="w-24 border rounded px-1" value={el.thickness} onChange={e => onChange({ thickness: Number(e.target.value) })} /></FieldRow>
       <FieldRow label="Width"><input type="number" className="w-24 border rounded px-1" value={el.w} onChange={e => onChange({ w: Number(e.target.value) })} /></FieldRow>
+      <FieldRow label="Rotate"><input type="number" className="w-24 border rounded px-1" value={el.r || 0} onChange={e => onChange({ r: Number(e.target.value) })} /></FieldRow>
     </div>
   )
+}
+
+// Minimal SVG generator (MVP)
+function toSVG({ width, height, elements, renderTpl }: { width:number; height:number; elements:any[]; renderTpl:(tpl:string)=>string }){
+  const esc = (s:string)=> s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  const items = elements.map(el => {
+    const r = el.r ? ` transform="rotate(${el.r} ${el.x + el.w/2} ${el.y + el.h/2})"` : ''
+    if (el.type === 'text'){
+      const t = el.bind ? renderTpl(el.bind) : el.text
+      return `<text x="${el.x}" y="${el.y + 12}" font-size="${el.fontSize||14}" font-family="system-ui"${r}>${esc(String(t))}</text>`
+    }
+    if (el.type === 'line'){
+      return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.thickness||2}" fill="#000"${r}/>`
+    }
+    if (el.type === 'image'){
+      return `<image xlink:href="${esc(el.src||'')}" x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}"${r}/>`
+    }
+    if (el.type === 'qr'){
+      // placeholder square for MVP
+      return `<rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" fill="none" stroke="#000" stroke-width="2"${r}/>`
+    }
+    return ''
+  }).join('')
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#fff"/>${items}</svg>`
 }

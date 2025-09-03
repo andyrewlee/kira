@@ -51,7 +51,6 @@ export default function PrintersLayout() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-mono text-2xl">Printers · Layouts</h1>
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-medium">Entire Order Layouts</h2>

@@ -43,7 +43,6 @@ export default function PrintersRegister() {
 
   return (
     <div className="space-y-4">
-      <h1 className="font-mono text-2xl">Printers · Register</h1>
       <div className="rounded-md border p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">Discover printers on your network.</div>

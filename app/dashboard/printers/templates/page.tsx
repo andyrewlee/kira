@@ -22,7 +22,6 @@ export default function PrintersTemplates() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-mono text-2xl">Printers · Templates</h1>
       <section className="space-y-2">
         <h2 className="text-base font-medium">Entire Order Templates</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
