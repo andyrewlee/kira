@@ -9,10 +9,8 @@
     "predev": "convex dev --until-success && convex dashboard",
     "build": "next build",
     "typecheck": "tsc --noEmit",
-    "lint:fix": "next lint --fix",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier --write .",
     "prepare": "husky"
   },
   "dependencies": {
