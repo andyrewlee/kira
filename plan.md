@@ -168,7 +168,7 @@ Checklist
 - [x] Grok-backed notes/chat with Convex-first fallback store
 - [x] Debounce thresholds applied (DEBOUNCE_MS/DEBOUNCE_TURNS)
 - [x] Rate limits + debug event buffer
-- [ ] Audio retention policy enforcement
+- [x] Audio retention policy enforcement
 - [ ] Integration + fallback tests
 
 ### 4.1 Endpoints (baseline)
@@ -213,7 +213,7 @@ Checklist
 - [x] Baseline meeting UI (transcript, notes, summary, seed/reset/brief/chat/refresh/STT)
 - [x] WebRTC panel vendored & gated by USE_WEBRTC_DESKTOP; context push wired
 - [ ] Replace dev bearer with Clerk token everywhere in UI
-- [ ] WebRTC fallback behaviors (timeout/fail → toast + TTS)
+- [x] WebRTC fallback behaviors (timeout/fail → toast + TTS)
 - [ ] Smoke path seed → brief → interrupt → ask → answer → resume (web/Electron)
 
 **Status:** WebRTC panel vendored, gated by `USE_WEBRTC_DESKTOP`, pushes meeting context via Convex client (fake fallback flag), basic fallback alert. Needs main meeting UI integration + toasts/state-machine hooks.
