@@ -24,6 +24,7 @@ const MAX_TURNS_CONTEXT = Number(process.env.MAX_TURNS_CONTEXT || 60);
 const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 60000);
 const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX || 30);
 const MOCK_XAI = process.env.MOCK_XAI === "1";
+const AUDIO_RETENTION = process.env.AUDIO_RETENTION || "discard";
 
 // Simple rate limiter per token+endpoint
 const rateBuckets = new Map<string, number[]>();
@@ -118,7 +119,13 @@ app.post("/stt", requireAuth, async (req, res) => {
       }
     }
 
-    pushEvent({ ts: new Date().toISOString(), type: "stt", meetingId, details: { text } });
+    // Audio retention: never write audio to disk; note retention intent in event log
+    pushEvent({
+      ts: new Date().toISOString(),
+      type: "stt",
+      meetingId,
+      details: { text, audio_retention: AUDIO_RETENTION },
+    });
     res.json({ text, meetingId });
   } catch (err) {
     console.error("STT failed", err);

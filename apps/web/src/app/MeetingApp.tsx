@@ -165,6 +165,9 @@ function MeetingAppInner() {
         await loadContext();
         addToast("STT processed", "success");
         stream.getTracks().forEach((t) => t.stop());
+        if (import.meta.env.VITE_AUDIO_RETENTION !== "keep_local_for_retry") {
+          chunksRef.current = [];
+        }
       };
       mediaRecorder.start();
       setTimeout(() => {
