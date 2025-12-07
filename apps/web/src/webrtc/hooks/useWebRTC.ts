@@ -272,7 +272,11 @@ export function useWebRTC(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${AUTH_BEARER}`,
+          Authorization: `Bearer ${
+            typeof window !== "undefined" && window.localStorage.getItem("authToken")
+              ? window.localStorage.getItem("authToken")
+              : AUTH_BEARER
+          }`,
         },
         body: JSON.stringify({
           sample_rate: sampleRate,
@@ -417,7 +421,13 @@ export function useWebRTC(
     if (sessionIdRef.current) {
       fetch(`${API_BASE_URL}/webrtc/sessions/${sessionIdRef.current}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${AUTH_BEARER}` },
+        headers: {
+          Authorization: `Bearer ${
+            typeof window !== "undefined" && window.localStorage.getItem("authToken")
+              ? window.localStorage.getItem("authToken")
+              : AUTH_BEARER
+          }`,
+        },
       }).catch(console.error);
       sessionIdRef.current = null;
     }
