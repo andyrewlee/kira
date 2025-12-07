@@ -27,3 +27,8 @@ Or run both: `npm run dev`.
 - Real Convex client (needs `npx convex dev` / CONVEX_DEPLOYMENT) and swap in for in-memory store.
 - Real Clerk tokens from the web app (replace `VITE_DEMO_BEARER` / localStorage override).
 - STT/Chat/Notes refresh endpoints to call Grok; state-machine/toast polish for WebRTC fallback.
+
+## Manual smoke (no scripts)
+1) Start backend (`npm run dev:backend`) and web (`npm run dev:web`).
+2) In the web baseline panel: Seed demo → Brief Me → Record STT → Refresh notes → Ask “what did we decide?”.
+3) Verify transcript/notes/summary update; WebRTC panel connects (if enabled) and shows context.
