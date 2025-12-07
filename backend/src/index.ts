@@ -5,6 +5,14 @@ import ExpressWs from "express-ws";
 import { requireAuth } from "./middleware/auth";
 import { registerWebrtcRoutes } from "./webrtc/routes";
 import { store } from "./store";
+import {
+  convexClient,
+  convexSeedDemo,
+  convexResetMeeting,
+  convexGetContext,
+  convexAppendTurn,
+  convexSetNotes,
+} from "./convexClient";
 
 const { app } = ExpressWs(express() as any);
 
@@ -48,11 +56,17 @@ app.post("/tts", requireAuth, async (req, res) => {
     res.status(500).json({ error: "TTS failed" });
   }
 });
-// Stubbed chat: returns summary + last turn
-app.post("/chat", requireAuth, (req, res) => {
+// Stubbed chat: returns summary + last turn (Convex first, fallback store)
+app.post("/chat", requireAuth, async (req, res) => {
   const meetingId = req.body?.meetingId || "demo-meeting";
   const message = req.body?.message || "";
-  const ctx = store.getContext(meetingId, 5);
+  let ctx: any = null;
+  try {
+    if (convexClient) ctx = await convexGetContext(meetingId, 5);
+  } catch (err) {
+    console.error("Convex chat context failed", err);
+  }
+  if (!ctx) ctx = store.getContext(meetingId, 5);
   if (!ctx) return res.status(404).json({ error: "Meeting not found" });
   const lastTurn = ctx.turns[ctx.turns.length - 1];
   res.json({
@@ -60,41 +74,89 @@ app.post("/chat", requireAuth, (req, res) => {
   });
 });
 
-// Stubbed notes refresh: summarizes last 3 turns and writes to store
-app.post("/notes/refresh", requireAuth, (req, res) => {
+// Stubbed notes refresh: summarizes last 3 turns and writes to Convex/store
+app.post("/notes/refresh", requireAuth, async (req, res) => {
   const meetingId = req.body?.meetingId || "demo-meeting";
-  const ctx = store.getContext(meetingId, 10);
+  let ctx: any = null;
+  try {
+    if (convexClient) ctx = await convexGetContext(meetingId, 10);
+  } catch (err) {
+    console.error("Convex notes context failed", err);
+  }
+  if (!ctx) ctx = store.getContext(meetingId, 10);
   if (!ctx) return res.status(404).json({ error: "Meeting not found" });
-  const recent = ctx.turns.slice(-3).map((t) => t.text).join(". ");
+  const recent = ctx.turns.slice(-3).map((t: any) => t.text).join(". ");
   const summary = recent ? `Recent: ${recent}` : ctx.summary;
   const notes = ctx.notes.length ? ctx.notes : ["(stubbed notes) No new notes yet."];
+  try {
+    if (convexClient) {
+      await convexSetNotes(meetingId, notes, summary);
+      return res.json({ summary, notes });
+    }
+  } catch (err) {
+    console.error("Convex setNotes failed", err);
+  }
   store.setNotesAndSummary(meetingId, notes, summary);
-  res.json({ summary, notes });
+  res.json({ summary, notes, fallback: true });
 });
 
-// Temporary in-memory meeting handlers (replace with Convex wiring)
-app.post("/seedDemoMeeting", requireAuth, (req, res) => {
-  const meetingId = store.seedDemo(req.body?.userId || "demo-user");
-  res.json({ meetingId });
+// Meeting handlers (Convex first, fallback to in-memory)
+app.post("/seedDemoMeeting", requireAuth, async (req, res) => {
+  const userId = req.body?.userId || "demo-user";
+  try {
+    if (convexClient) {
+      const meetingId = await convexSeedDemo(userId);
+      return res.json({ meetingId });
+    }
+  } catch (err) {
+    console.error("Convex seedDemoMeeting failed", err);
+  }
+  const meetingId = store.seedDemo(userId);
+  res.json({ meetingId, fallback: true });
 });
 
-app.post("/resetMeeting", requireAuth, (req, res) => {
+app.post("/resetMeeting", requireAuth, async (req, res) => {
   const meetingId = req.body?.meetingId || "demo-meeting";
+  try {
+    if (convexClient) {
+      await convexResetMeeting(meetingId);
+      return res.json({ ok: true });
+    }
+  } catch (err) {
+    console.error("Convex resetMeeting failed", err);
+  }
   store.resetMeeting(meetingId);
-  res.json({ ok: true });
+  res.json({ ok: true, fallback: true });
 });
 
-app.get("/meetings/:id/context", requireAuth, (req, res) => {
-  const ctx = store.getContext(req.params.id, Number(req.query.tail) || 60);
+app.get("/meetings/:id/context", requireAuth, async (req, res) => {
+  const tail = Number(req.query.tail) || 60;
+  try {
+    if (convexClient) {
+      const ctx = await convexGetContext(req.params.id, tail);
+      return res.json(ctx);
+    }
+  } catch (err) {
+    console.error("Convex getContext failed", err);
+  }
+  const ctx = store.getContext(req.params.id, tail);
   if (!ctx) return res.status(404).json({ error: "Meeting not found" });
   res.json(ctx);
 });
 
-app.post("/meetings/:id/ingest", requireAuth, (req, res) => {
+app.post("/meetings/:id/ingest", requireAuth, async (req, res) => {
   const meetingId = req.params.id;
   const { channel = "mic", speakerKey = "me", text = "", ts = Date.now(), source = "human" } = req.body || {};
+  try {
+    if (convexClient) {
+      await convexAppendTurn({ meetingId, channel, speakerKey, text, ts, source });
+      return res.json({ ok: true });
+    }
+  } catch (err) {
+    console.error("Convex ingest failed", err);
+  }
   store.appendTurn({ meetingId, channel, speakerKey, text, ts, source });
-  res.json({ ok: true });
+  res.json({ ok: true, fallback: true });
 });
 
 // Phase 5 WebRTC relay (xAI example integration)
