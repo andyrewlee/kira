@@ -1,28 +1,24 @@
-// Convex schema placeholder (Phase 2)
-// Define meetings and turns; real Convex schema should replace this stub.
+import { defineSchema, defineTable } from "convex/schema";
+import { v } from "convex/values";
 
-export type Meeting = {
-  id: string;
-  userId: string;
-  title: string;
-  startedAt: string;
-  notes: string[];
-  summary: string;
-  speakerAliases: Record<string, string>; // e.g., { me: "Me", them: "Them" }
-  templateId?: string;
-  privacy?: "private" | "shared";
-};
+export default defineSchema({
+  meetings: defineTable({
+    userId: v.string(),
+    title: v.string(),
+    startedAt: v.number(),
+    notes: v.array(v.string()),
+    summary: v.string(),
+    speakerAliases: v.record(v.string()),
+    templateId: v.optional(v.string()),
+    privacy: v.optional(v.union(v.literal("private"), v.literal("shared"))),
+  }).index("by_user", ["userId"]),
 
-export type TurnSource = "human" | "system" | "llm";
-
-export type Turn = {
-  id: string;
-  meetingId: string;
-  channel: "mic" | "system";
-  speakerKey: string;
-  text: string;
-  ts: number;
-  source: TurnSource;
-};
-
-// TODO: replace with Convex schema builder when wiring Convex.
+  turns: defineTable({
+    meetingId: v.id("meetings"),
+    channel: v.union(v.literal("mic"), v.literal("system")),
+    speakerKey: v.string(),
+    text: v.string(),
+    ts: v.number(),
+    source: v.union(v.literal("human"), v.literal("system"), v.literal("llm")),
+  }).index("by_meeting_ts", ["meetingId", "ts"]),
+});
