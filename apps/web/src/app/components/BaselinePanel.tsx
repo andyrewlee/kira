@@ -12,9 +12,10 @@ interface Props {
   notes?: string[];
   summary?: string;
   lastSTT?: string;
+  isRecording?: boolean;
 }
 
-export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAddTurn, onChat, onRefreshNotes, onSTT, transcript = [], notes = [], summary = "", lastSTT = "" }) => {
+export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAddTurn, onChat, onRefreshNotes, onSTT, transcript = [], notes = [], summary = "", lastSTT = "", isRecording = false }) => {
   return (
     <div style={{ padding: "1rem", background: "#0f172a", color: "#e2e8f0", minHeight: "100vh" }}>
       <h1 style={{ margin: 0, fontSize: "20px" }}>Kira Meeting</h1>
@@ -27,7 +28,7 @@ export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAdd
         <button onClick={onAddTurn} style={buttonStyle}>Add demo turn</button>
         <button onClick={onChat} style={buttonStyle}>Ask: what did we decide?</button>
         <button onClick={onRefreshNotes} style={buttonStyle}>Refresh notes (stub)</button>
-        <button onClick={onSTT} style={buttonStyle}>Fake STT ingest</button>
+        <button onClick={onSTT} style={{ ...buttonStyle, background: isRecording ? "#b91c1c" : buttonStyle.background }}>{isRecording ? "Recording..." : "Record STT"}</button>
       </div>
 
       <div style={cardStyle}>

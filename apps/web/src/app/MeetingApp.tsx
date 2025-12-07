@@ -15,6 +15,7 @@ import {
 import { MeetingContextPayload, renderContextText } from "@shared";
 import { playMp3Blob } from "./audio";
 import { getAuthHeader } from "./api";
+import { blobToBase64 } from "./utils";
 
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
@@ -25,6 +26,9 @@ function MeetingAppInner() {
   const { addToast } = useToast();
   const [context, setContext] = React.useState<MeetingContextPayload | null>(null);
   const [lastSTT, setLastSTT] = React.useState<string>("");
+  const [isRecording, setIsRecording] = React.useState<boolean>(false);
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const chunksRef = React.useRef<BlobPart[]>([]);
   const meetingId = "demo-meeting";
 
   // Ensure a token exists in dev to satisfy backend auth
@@ -137,15 +141,36 @@ function MeetingAppInner() {
   };
 
   const handleSTT = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      addToast("getUserMedia not supported", "error");
+      return;
+    }
     try {
-      // Demo: reuse Brief Me audio summary as fake input for STT
-      const fakeAudio = btoa("fake-audio" + Date.now());
-      const { text } = await sttBase64(fakeAudio, "mp3", meetingId, "me");
-      setLastSTT(text);
-      await loadContext();
-      addToast("STT processed", "success");
+      setIsRecording(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      mediaRecorder.onstop = async () => {
+        setIsRecording(false);
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const b64 = await blobToBase64(blob);
+        const { text } = await sttBase64(b64, "webm", meetingId, "me");
+        setLastSTT(text);
+        await loadContext();
+        addToast("STT processed", "success");
+        stream.getTracks().forEach((t) => t.stop());
+      };
+      mediaRecorder.start();
+      setTimeout(() => {
+        if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
+      }, 4000); // 4s clip
     } catch (err) {
       console.error(err);
+      setIsRecording(false);
       addToast("STT failed", "error");
     }
   };
@@ -190,6 +215,7 @@ function MeetingAppInner() {
           notes={context?.notes || []}
           summary={context?.summary || ""}
           lastSTT={lastSTT}
+          isRecording={isRecording}
         />
         <div style={{ padding: "0.75rem 1rem", background: "#0f172a", color: "#94a3b8", borderTop: "1px solid #1f2937" }}>
           Audio session state: <span style={{ color: "#e2e8f0" }}>{audioSession.state}</span>
