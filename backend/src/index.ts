@@ -2,9 +2,10 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import ExpressWs from "express-ws";
-import { requireAuth, validateWsToken } from "./middleware/auth";
+import { requireAuth } from "./middleware/auth";
+import { registerWebrtcRoutes } from "./webrtc/routes";
 
-const { app } = ExpressWs(express());
+const { app } = ExpressWs(express() as any);
 
 // CORS
 const allowlist = (process.env.CORS_ALLOWLIST || "http://localhost:3000,http://localhost:5173,http://localhost:8080").split(",");
@@ -23,20 +24,8 @@ app.post("/chat", requireAuth, (_req, res) => res.status(501).json({ error: "Cha
 app.post("/meetings/:id/ingest", requireAuth, (_req, res) => res.status(501).json({ error: "Ingest not implemented" }));
 app.post("/notes/refresh", requireAuth, (_req, res) => res.status(501).json({ error: "Notes refresh not implemented" }));
 
-// Phase 5 WebRTC relay placeholders (real relay will be mounted later)
-app.post("/webrtc/sessions", requireAuth, (_req, res) => {
-  return res.status(501).json({ error: "WebRTC session creation not implemented" });
-});
-
-app.ws("/webrtc/signaling/:sessionId", (ws, req) => {
-  const token = (req.query?.token as string | undefined) || undefined;
-  if (!validateWsToken(token)) {
-    ws.close(1008, "Invalid token");
-    return;
-  }
-  ws.send(JSON.stringify({ error: "Signaling not implemented" }));
-  ws.close();
-});
+// Phase 5 WebRTC relay (xAI example integration)
+registerWebrtcRoutes({ app: app as any, requireAuth });
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
