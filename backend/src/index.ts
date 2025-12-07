@@ -20,7 +20,34 @@ app.get("/health", (_req, res) => {
 
 // Phase 4 baseline endpoint shapes (stubbed)
 app.post("/stt", requireAuth, (_req, res) => res.status(501).json({ error: "STT not implemented" }));
-app.post("/tts", requireAuth, (_req, res) => res.status(501).json({ error: "TTS not implemented" }));
+app.post("/tts", requireAuth, async (req, res) => {
+  try {
+    const XAI_API_KEY = process.env.XAI_API_KEY;
+    if (!XAI_API_KEY) return res.status(500).json({ error: "Missing XAI_API_KEY" });
+    const text = req.body?.text || "";
+    const voice = req.body?.voice || process.env.VOICE || "una";
+    const speed = req.body?.speed || 1.0;
+    const ttsRes = await fetch("https://api.x.ai/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${XAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ model: "grok-tts", input: text, voice, speed }),
+    });
+    if (!ttsRes.ok) {
+      const errTxt = await ttsRes.text();
+      console.error("TTS upstream error", errTxt);
+      return res.status(500).json({ error: "TTS upstream failed" });
+    }
+    const buf = Buffer.from(await ttsRes.arrayBuffer());
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.send(buf);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "TTS failed" });
+  }
+});
 app.post("/chat", requireAuth, (_req, res) => res.status(501).json({ error: "Chat not implemented" }));
 app.post("/meetings/:id/ingest", requireAuth, (_req, res) => res.status(501).json({ error: "Ingest not implemented" }));
 app.post("/notes/refresh", requireAuth, (_req, res) => res.status(501).json({ error: "Notes refresh not implemented" }));

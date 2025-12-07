@@ -7,6 +7,7 @@ import { briefMe, resetMeeting, seedDemo } from "./api";
 import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeConvex";
 import { fetchMeetingContext as fetchMeetingContextConvex } from "../context/convexClient";
 import { MeetingContextPayload, renderContextText } from "@shared";
+import { playMp3Blob } from "./audio";
 
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
@@ -28,8 +29,20 @@ function MeetingAppInner() {
     addToast("Meeting reset", "info");
   };
   const handleBrief = async () => {
-    await briefMe();
-    addToast("Brief Me triggered (TTS not wired yet)", "info");
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_DEMO_BEARER || "dev-token"}` },
+        body: JSON.stringify({ text: context?.summary || "Here is your briefing.", voice: "una", speed: 1.0 }),
+      });
+      if (!res.ok) throw new Error("TTS failed");
+      const blob = await res.blob();
+      await playMp3Blob(blob);
+      addToast("Playing briefing", "success");
+    } catch (err) {
+      console.error(err);
+      addToast("Briefing failed", "error");
+    }
   };
 
   const loadContext = React.useCallback(async () => {

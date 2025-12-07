@@ -28,8 +28,17 @@ export async function resetMeeting(meetingId: string): Promise<void> {
 }
 
 export async function briefMe(): Promise<void> {
-  // TODO: call /tts once implemented
-  console.warn("briefMe(): TTS wiring not implemented");
+  const res = await fetch(`${API_BASE_URL}/tts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({ text: "Here is your briefing.", voice: "una" }),
+  });
+  if (!res.ok) throw new Error("TTS failed");
+  // Caller will read blob
+  return;
 }
 
 export function getAuthHeader() {
