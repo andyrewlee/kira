@@ -241,6 +241,8 @@ export function useWebRTC(
         setIsConnected(false);
         setIsConnecting(false);
         setConnectionQuality("unknown");
+        emitWebRTCError(`Connection ${pc.connectionState}`);
+        emitWebRTCFallback(pc.connectionState);
       }
     };
 

@@ -12,6 +12,7 @@ import {
   convexGetContext,
   convexAppendTurn,
   convexSetNotes,
+  convexRenameSpeaker,
 } from "./convexClient";
 import fetch, { Blob, FormData } from "node-fetch";
 
@@ -325,6 +326,22 @@ app.post("/resetMeeting", requireAuth, async (req, res) => {
     console.error("Convex resetMeeting failed", err);
   }
   store.resetMeeting(meetingId);
+  res.json({ ok: true, fallback: true });
+});
+
+app.post("/meetings/:id/renameSpeaker", requireAuth, async (req, res) => {
+  const meetingId = req.params.id;
+  const { speakerKey, alias } = req.body || {};
+  if (!speakerKey || !alias) return res.status(400).json({ error: "Missing speakerKey/alias" });
+  try {
+    if (convexClient) {
+      await convexRenameSpeaker(meetingId, speakerKey, alias);
+      return res.json({ ok: true });
+    }
+  } catch (err) {
+    console.error("Convex renameSpeaker failed", err);
+  }
+  store.renameSpeaker(meetingId, speakerKey, alias);
   res.json({ ok: true, fallback: true });
 });
 

@@ -77,6 +77,12 @@ class InMemoryStore {
     return id;
   }
 
+  renameSpeaker(meetingId: string, speakerKey: string, alias: string) {
+    const meeting = this.meetings.get(meetingId);
+    if (!meeting) return;
+    meeting.speakerAliases = { ...meeting.speakerAliases, [speakerKey]: alias };
+  }
+
   getContext(meetingId: string, tail: number = 60) {
     const meeting = this.meetings.get(meetingId);
     if (!meeting) return null;

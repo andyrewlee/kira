@@ -40,3 +40,8 @@ export async function convexSetNotes(meetingId: any, notes: string[], summary: s
   if (!convexClient) throw new Error("Convex client not configured");
   return convexClient.mutation(api.src.functions.meetings.setNotesAndSummary, { meetingId, notes, summary });
 }
+
+export async function convexRenameSpeaker(meetingId: any, speakerKey: string, alias: string) {
+  if (!convexClient) throw new Error("Convex client not configured");
+  return convexClient.mutation(api.src.functions.meetings.renameSpeaker, { meetingId, speakerKey, alias });
+}

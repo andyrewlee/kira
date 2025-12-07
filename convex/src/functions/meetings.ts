@@ -2,8 +2,8 @@ import { mutation, query } from "../../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../../_generated/dataModel";
 
-function requireAuth(ctx: any) {
-  const identity = ctx.auth.getUserIdentity?.();
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity?.();
   if (!identity) throw new Error("Unauthorized");
   return identity;
 }
@@ -15,7 +15,7 @@ export const createMeeting = mutation({
     startedAt: v.number(),
   },
   handler: async (ctx, args) => {
-    requireAuth(ctx);
+    await requireAuth(ctx);
     const meetingId = await ctx.db.insert("meetings", {
       title: args.title,
       userId: args.userId,
@@ -40,7 +40,7 @@ export const appendTurn = mutation({
     source: v.union(v.literal("human"), v.literal("system"), v.literal("llm")),
   },
   handler: async (ctx, args) => {
-    requireAuth(ctx);
+    await requireAuth(ctx);
     const turnId = await ctx.db.insert("turns", {
       meetingId: args.meetingId,
       channel: args.channel,
@@ -60,7 +60,7 @@ export const renameSpeaker = mutation({
     alias: v.string(),
   },
   handler: async (ctx, args) => {
-    requireAuth(ctx);
+    await requireAuth(ctx);
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) throw new Error("Meeting not found");
     await ctx.db.patch(args.meetingId, {
@@ -76,7 +76,7 @@ export const setNotesAndSummary = mutation({
     summary: v.string(),
   },
   handler: async (ctx, args) => {
-    requireAuth(ctx);
+    await requireAuth(ctx);
     await ctx.db.patch(args.meetingId, {
       notes: args.notes,
       summary: args.summary,
@@ -89,7 +89,7 @@ export const resetMeeting = mutation({
     meetingId: v.id("meetings"),
   },
   handler: async (ctx, args) => {
-    requireAuth(ctx);
+    await requireAuth(ctx);
     await ctx.db.patch(args.meetingId, { notes: [], summary: "" });
     const db: any = ctx.db;
     const turns = await db
@@ -107,7 +107,7 @@ export const seedDemoMeeting = mutation({
     userId: v.string(),
   },
   handler: async (ctx, args) => {
-    requireAuth(ctx);
+    await requireAuth(ctx);
     const meetingId = await ctx.db.insert("meetings", {
       title: "Demo Meeting",
       userId: args.userId,
@@ -147,7 +147,7 @@ export const getMeetingContext = query({
     tail: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    requireAuth(ctx);
+    await requireAuth(ctx);
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) throw new Error("Meeting not found");
     const tail = args.tail ?? 60;

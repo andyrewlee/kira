@@ -3,8 +3,7 @@ import { WebRTCDemo } from "../webrtc";
 import { useAudioSessionState } from "./state";
 import { BaselinePanel } from "./components/BaselinePanel";
 import { ToastProvider, useToast } from "./toast/ToastContext";
-import { briefMe, resetMeeting, seedDemo, chat, refreshNotes, buildAuthHeaders } from "./api";
-import { sttBase64 } from "./api";
+import { briefMe, resetMeeting, seedDemo, chat, refreshNotes, buildAuthHeaders, sttBase64 } from "./api";
 import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeConvex";
 import {
   fetchMeetingContext as fetchMeetingContextConvex,
@@ -19,6 +18,9 @@ import { blobToBase64 } from "./utils";
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
 const AUDIO_RETENTION = import.meta.env.VITE_AUDIO_RETENTION || "discard";
+const BRIEFING_MODE = import.meta.env.VITE_BRIEFING_MODE || "tts";
+const VOICE_INTERRUPT_MODE = import.meta.env.VITE_VOICE_INTERRUPT_MODE || "tap";
+const VOICE = import.meta.env.VITE_VOICE || "una";
 
 function MeetingAppInner() {
   const audioSession = useAudioSessionState();
@@ -27,6 +29,11 @@ function MeetingAppInner() {
   const [lastSTT, setLastSTT] = React.useState<string>("");
   const [isRecording, setIsRecording] = React.useState<boolean>(false);
   const [webrtcAvailable, setWebrtcAvailable] = React.useState<boolean>(USE_WEBRTC_DESKTOP);
+  const [speakerMe, setSpeakerMe] = React.useState<string>("Me");
+  const [speakerThem, setSpeakerThem] = React.useState<string>("Them");
+  const [events, setEvents] = React.useState<any[]>([]);
+  const [lastAudio, setLastAudio] = React.useState<HTMLAudioElement | null>(null);
+  const [playbackSpeed, setPlaybackSpeed] = React.useState<number>(1);
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const chunksRef = React.useRef<BlobPart[]>([]);
   const meetingId = "demo-meeting";
@@ -81,10 +88,17 @@ function MeetingAppInner() {
   const handleBrief = async () => {
     try {
       audioSession.send({ type: "PLAY_BRIEFING" });
-      const blob = await briefMe(context?.summary || "Here is your briefing.", "una", 1.0);
-      await playMp3Blob(blob);
-      audioSession.send({ type: "STOP_PLAYBACK" });
-      addToast("Playing briefing", "success");
+      if (BRIEFING_MODE === "webrtc" && webrtcAvailable) {
+        window.dispatchEvent(new CustomEvent("webrtc:brief", { detail: context?.summary || "" }));
+        addToast("Sending briefing over WebRTC", "info");
+      } else {
+        const blob = await briefMe(context?.summary || "Here is your briefing.", VOICE, playbackSpeed);
+        const audioEl = await playMp3Blob(blob);
+        audioEl.playbackRate = playbackSpeed;
+        setLastAudio(audioEl);
+        audioSession.send({ type: "STOP_PLAYBACK" });
+        addToast("Playing briefing", "success");
+      }
     } catch (err) {
       console.error(err);
       addToast("Briefing failed", "error");
@@ -124,6 +138,11 @@ function MeetingAppInner() {
     try {
       const reply = await chat(meetingId, "What did we decide?");
       addToast(`Chat: ${reply.slice(0, 80)}...`, "info");
+      // Speak reply via TTS
+      const blob = await briefMe(reply, VOICE, playbackSpeed);
+      const audioEl = await playMp3Blob(blob);
+      audioEl.playbackRate = playbackSpeed;
+      setLastAudio(audioEl);
     } catch (err) {
       console.error(err);
       addToast("Chat failed", "error");
@@ -185,6 +204,8 @@ function MeetingAppInner() {
         ? await fetchMeetingContextFake(meetingId)
         : await fetchMeetingContextConvex(meetingId);
       setContext(ctx);
+      setSpeakerMe(ctx.speakerAliases?.me || "Me");
+      setSpeakerThem(ctx.speakerAliases?.them || "Them");
     } catch (err) {
       console.error(err);
       // Auto-seed if missing when not in fake mode
@@ -215,11 +236,59 @@ function MeetingAppInner() {
           onChat={handleChat}
           onRefreshNotes={handleRefreshNotes}
           onSTT={handleSTT}
+          onInterrupt={() => {
+            if (lastAudio) {
+              lastAudio.pause();
+              lastAudio.currentTime = 0;
+            }
+            audioSession.send({ type: "INTERRUPT" });
+          }}
+          onSkipBack={() => {
+            if (lastAudio) lastAudio.currentTime = Math.max(0, lastAudio.currentTime - 10);
+          }}
+          onSkipForward={() => {
+            if (lastAudio) lastAudio.currentTime = Math.min((lastAudio.duration || 0), lastAudio.currentTime + 10);
+          }}
+          onSpeedChange={(s) => {
+            setPlaybackSpeed(s);
+            if (lastAudio) lastAudio.playbackRate = s;
+          }}
           transcript={(context?.turns || []).map((t: any) => `${context?.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)}
           notes={context?.notes || []}
           summary={context?.summary || ""}
           lastSTT={lastSTT}
           isRecording={isRecording}
+          speakerMe={speakerMe}
+          speakerThem={speakerThem}
+          onRenameSpeaker={async (key, alias) => {
+            try {
+              const headers = await buildAuthHeaders();
+              await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/meetings/${meetingId}/renameSpeaker`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ speakerKey: key, alias }),
+              });
+              await loadContext();
+              addToast("Speaker renamed", "success");
+            } catch (err) {
+              console.error(err);
+              addToast("Rename failed", "error");
+            }
+          }}
+          events={events}
+          onRefreshEvents={async () => {
+            try {
+              const headers = await buildAuthHeaders();
+              const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/debug/events`, { headers });
+              if (res.ok) {
+                setEvents(await res.json());
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }}
+          voiceInterruptMode={VOICE_INTERRUPT_MODE}
+          playbackSpeed={playbackSpeed}
         />
         <div style={{ padding: "0.75rem 1rem", background: "#0f172a", color: "#94a3b8", borderTop: "1px solid #1f2937" }}>
           Audio session state: <span style={{ color: "#e2e8f0" }}>{audioSession.state}</span>
