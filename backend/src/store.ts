@@ -58,6 +58,17 @@ class InMemoryStore {
     this.turns.set(id, []);
   }
 
+  setNotesAndSummary(id: string, notes: string[], summary: string) {
+    const meeting = this.meetings.get(id);
+    if (!meeting) return;
+    meeting.notes = notes;
+    meeting.summary = summary;
+  }
+
+  getMeeting(id: string) {
+    return this.meetings.get(id) || null;
+  }
+
   appendTurn(turn: Omit<Turn, "id">): string {
     const id = randomUUID();
     const existing = this.turns.get(turn.meetingId) || [];

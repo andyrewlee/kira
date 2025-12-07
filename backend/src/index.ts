@@ -48,8 +48,29 @@ app.post("/tts", requireAuth, async (req, res) => {
     res.status(500).json({ error: "TTS failed" });
   }
 });
-app.post("/chat", requireAuth, (_req, res) => res.status(501).json({ error: "Chat not implemented" }));
-app.post("/notes/refresh", requireAuth, (_req, res) => res.status(501).json({ error: "Notes refresh not implemented" }));
+// Stubbed chat: returns summary + last turn
+app.post("/chat", requireAuth, (req, res) => {
+  const meetingId = req.body?.meetingId || "demo-meeting";
+  const message = req.body?.message || "";
+  const ctx = store.getContext(meetingId, 5);
+  if (!ctx) return res.status(404).json({ error: "Meeting not found" });
+  const lastTurn = ctx.turns[ctx.turns.length - 1];
+  res.json({
+    reply: `Stubbed chat: ${message ? "You asked: " + message + ". " : ""}Last turn: ${lastTurn ? lastTurn.text : "(none)"}. Summary: ${ctx.summary}`,
+  });
+});
+
+// Stubbed notes refresh: summarizes last 3 turns and writes to store
+app.post("/notes/refresh", requireAuth, (req, res) => {
+  const meetingId = req.body?.meetingId || "demo-meeting";
+  const ctx = store.getContext(meetingId, 10);
+  if (!ctx) return res.status(404).json({ error: "Meeting not found" });
+  const recent = ctx.turns.slice(-3).map((t) => t.text).join(". ");
+  const summary = recent ? `Recent: ${recent}` : ctx.summary;
+  const notes = ctx.notes.length ? ctx.notes : ["(stubbed notes) No new notes yet."];
+  store.setNotesAndSummary(meetingId, notes, summary);
+  res.json({ summary, notes });
+});
 
 // Temporary in-memory meeting handlers (replace with Convex wiring)
 app.post("/seedDemoMeeting", requireAuth, (req, res) => {
