@@ -2,12 +2,14 @@ import fetch from "node-fetch";
 import { describe, it, expect } from "vitest";
 
 const API = process.env.API || "http://localhost:4000";
-const TOKEN = process.env.TOKEN || "dev-token";
+const TOKEN = process.env.TOKEN;
 const MEETING = process.env.MEETING || "demo-meeting";
-const headers = {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${TOKEN}`,
-};
+const headers = TOKEN
+  ? {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${TOKEN}`,
+    }
+  : null;
 
 async function seedDemo() {
   const res = await fetch(`${API}/seedDemoMeeting`, {
@@ -58,7 +60,9 @@ async function context() {
   expect(Array.isArray(data.turns)).toBe(true);
 }
 
-describe("API smoke flow", () => {
+const integration = Boolean(process.env.RUN_INTEGRATION === "1" && TOKEN && headers);
+
+describe.skipIf(!integration)("API smoke flow (integration)", () => {
   it("seed -> tts -> ingest -> notes -> context", async () => {
     await seedDemo();
     await tts();
