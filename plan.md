@@ -169,9 +169,10 @@ This avoids putting the Clerk token in the WS URL.
 
 ---
 
-## Phase 5 — Web UI (shared for browser + Electron renderer)
-**Goal:** end-to-end demo without mic.
+## Phase 5 — Web UI (+ WebRTC agent panel integration)
+**Goal:** end-to-end demo without mic, then wire in the WebRTC voice panel once baseline UI is stable.
 
+### 5.1 Baseline UI
 - Meeting screen:
   - transcript grouped by `speakerAliases[speakerKey]`
   - rolling notes (Decisions/Actions/Open Questions)
@@ -184,26 +185,21 @@ This avoids putting the Clerk token in the WS URL.
   - tap interrupt + ask question (text) → `/chat` → `/tts` answer
 - Debug: collapsible last-50-events panel
 
----
+### 5.2 WebRTC Voice Agent (web/Electron) — xAI example integration
+- [ ] Vendor `xai-voice-examples-main/examples/agent/webrtc/server` → `backend/webrtc` and prefix routes to `/webrtc/*`.
+- [ ] Add auth + wsToken: `POST /webrtc/sessions` issues `{sessionId, wsUrl, wsToken}`; `WS /webrtc/signaling/:sessionId?token=...` validates token.
+- [ ] Expose flags via env: `USE_WEBRTC_DESKTOP`, `BRIEFING_MODE`, `VOICE_INTERRUPT_MODE`, `WEBRTC_CONNECT_TIMEOUT_MS`, `ICE_SERVERS` JSON, `ENABLE_TURN`, `VOICE`, `INSTRUCTIONS`, `ALLOWED_ORIGINS`.
+- [ ] Port client hook/UI from `examples/agent/webrtc/client` into `apps/web` behind flag; reuse Control/Stats/Debug, styled to match Kira.
+- [ ] Inject meeting context over DataChannel on connect + debounced refresh (aliases, notes, summary, tail turns).
+- [ ] Implement fallbacks: connect timeout/failed/disconnected → stop agent audio, toast, switch to baseline TTS.
+- [ ] Smoke test: seed → brief → interrupt → ask → answer → resume (browser + Electron dev).
 
-## Phase 6 — Electron wrapper (no duplicated UI)
-**Goal:** avoid “white screen” at the end.
-
-- Dev: load web dev server URL
-- Prod: load `file://.../dist/index.html` (test once early)
-- Electron main is a loader + platform hooks only
-
----
-
-# ✅ Phase 7 — WebRTC Voice Agent (web/Electron) for “talk to Kira about the meeting”
-**This is what you’re missing.** It gives you low‑latency voice conversation in web/Electron.
-
-## 7.1 Architecture (keep split!)
+#### 5.2.1 Architecture (keep split!)
 - **Meeting transcription & attribution:** dual-channel chunk → `/stt` → `/ingest` → Convex  
 - **Voice agent conversation:** WebRTC client ↔ your WebRTC relay server ↔ xAI realtime WS  
 WebRTC is **not** used for meeting attribution; it’s for **interactive Q&A + interruptible voice replies**.
 
-## 7.2 Backend: mount the example WebRTC relay under `/webrtc/*`
+#### 5.2.2 Backend: mount the example WebRTC relay under `/webrtc/*`
 Reuse `examples/agent/webrtc/server` code, but:
 - Prefix routes:
   - `POST /webrtc/sessions` (create session)
@@ -216,7 +212,7 @@ Reuse `examples/agent/webrtc/server` code, but:
 - Add connect timeout:
   - if not connected in `WEBRTC_CONNECT_TIMEOUT_MS` → fail + fallback
 
-## 7.3 Client: add “Voice Agent” panel in the Meeting screen (behind flag)
+#### 5.2.3 Client: add “Voice Agent” panel in the Meeting screen (behind flag)
 In `/apps/web`, embed the example client logic as a component:
 
 **Buttons**
@@ -234,7 +230,7 @@ In `/apps/web`, embed the example client logic as a component:
    - `autoGainControl: true`
 5) When connected, show agent transcript + audio output
 
-## 7.4 Inject meeting context so the agent answers “about the meeting”
+#### 5.2.4 Inject meeting context so the agent answers “about the meeting”
 Do this on connect (and periodically, debounced):
 - Pull from Convex:
   - `speakerAliases`
@@ -248,7 +244,7 @@ Do this on connect (and periodically, debounced):
 
 Keep context update throttled (e.g. every 10s or when summary changes) to avoid spam.
 
-## 7.5 “Brief Me” modes (TTS baseline + WebRTC optional)
+#### 5.2.5 “Brief Me” modes (TTS baseline + WebRTC optional)
 - Always keep baseline: `/tts` mp3
 - If `BRIEFING_MODE=webrtc` and WebRTC connected:
   - send message: “Read this meeting briefing out loud: <summary>”
@@ -257,7 +253,7 @@ Keep context update throttled (e.g. every 10s or when summary changes) to avoid 
     - stop playback immediately (clear audio queue)
     - switch state machine to `interrupted`
 
-## 7.6 Health/fallback rules (must implement)
+#### 5.2.6 Health/fallback rules (must implement)
 Auto fallback to TTS if:
 - WebRTC connect takes > `WEBRTC_CONNECT_TIMEOUT_MS`
 - `connectionState` becomes `failed` or `disconnected` for > 2s
@@ -268,7 +264,7 @@ When falling back:
 - show a toast: “Voice agent unavailable — using standard briefing”
 - log to debug panel
 
-## 7.7 Debug + stats
+#### 5.2.7 Debug + stats
 Surface:
 - WebRTC connection state
 - bitrate/jitter/packet loss (from example stats)
@@ -276,7 +272,16 @@ Surface:
 
 ---
 
-## Phase 8 — Desktop meeting capture: dual-channel Me/Them (Granola parity)
+## Phase 6 — Electron wrapper (no duplicated UI)
+**Goal:** avoid “white screen” at the end.
+
+- Dev: load web dev server URL
+- Prod: load `file://.../dist/index.html` (test once early)
+- Electron main is a loader + platform hooks only
+
+---
+
+## Phase 7 — Desktop meeting capture: dual-channel Me/Them (Granola parity)
 **Goal:** match Granola: no diarization, just 2 channels.
 
 ### 8.1 Capture strategy (hackathon feasible)
@@ -297,7 +302,7 @@ Detect when `getDisplayMedia` returns no audio track:
 
 ---
 
-## Phase 9 — Mobile (Expo): mic-only + Speaker A/B (Granola mobile parity)
+## Phase 8 — Mobile (Expo): mic-only + Speaker A/B (Granola mobile parity)
 - Mic chunks → `/stt` → `/ingest` with `channel:"mic"`, `speakerKey:"A"|"B"|...`
 - Manual speaker toggle
 - Brief Me: `/tts` playback + tap interrupt
@@ -305,7 +310,7 @@ Detect when `getDisplayMedia` returns no audio track:
 
 ---
 
-## Phase 10 — Calendar + Recipes + cross‑meeting chat (only after core is stable)
+## Phase 9 — Calendar + Recipes + cross‑meeting chat (only after core is stable)
 - Calendar read: today’s events
 - Optional writeback if `ALLOW_WRITEBACK=1`
 - Recipes/templates in Convex; selected per meeting
@@ -331,10 +336,10 @@ Run it on:
 ---
 
 ## If you’re starting right now (fastest “wow” order)
-1) Phase 1–5 (shared state machine + Convex + backend + web UI + seed demo)  
-2) Phase 7 (WebRTC voice agent panel in web/Electron) — timebox but likely doable quickly with the example  
-3) Phase 6 (Electron wrapper prod path)  
-4) Phase 8 (dual-channel capture)  
-5) Phase 9 (mobile)
+1) Phase 1–5 (shared state machine + Convex + backend + web UI + WebRTC panel + seed demo)  
+2) Phase 6 (Electron wrapper prod path)  
+3) Phase 7 (dual-channel capture)  
+4) Phase 8 (mobile)  
+5) Phase 9 (calendar/recipes, only if time)
 
 Ship baseline first; WebRTC is additive and safely gated behind flags.
