@@ -19,6 +19,7 @@ function App() {
   const sendMessageRef = useRef<((message: Message) => void) | null>(null);
   const sendContextRef = useRef<(text: string) => void>(() => {});
   const meetingIdRef = useRef<string>("demo-meeting");
+  const hasTriedConnectRef = useRef(false);
 
   const { isCapturing, startCapture, stopCapture, stopPlayback, playAudio, audioLevel, sampleRate } =
     useAudioStream();
@@ -204,6 +205,7 @@ function App() {
       clearLogs();
       setTranscript([]);
       currentTranscriptRef.current = null;
+      hasTriedConnectRef.current = true;
 
       // Initialize audio context to detect sample rate (but don't start capturing yet)
       const audioContext = new AudioContext();
@@ -219,9 +221,29 @@ function App() {
       await connect(detectedSampleRate);
     } catch (error) {
       console.error("Failed to start:", error);
-      alert(`Failed to start: ${error}`);
+      fallbackToBaseline();
     }
   };
+
+  // Simple fallback handler (replace with UI toast + state machine hook-in)
+  const fallbackToBaseline = useCallback(() => {
+    console.warn("Voice agent unavailable — falling back to baseline TTS");
+    if (typeof window !== "undefined") {
+      window.alert("Voice agent unavailable — using standard briefing");
+    }
+  }, []);
+
+  // Watch for post-connection failures and fallback after 2s
+  useEffect(() => {
+    if (!hasTriedConnectRef.current) return;
+    if (isConnected) return;
+    const timer = setTimeout(() => {
+      if (!isConnected && !isConnecting) {
+        fallbackToBaseline();
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [isConnected, isConnecting, fallbackToBaseline]);
 
   // Stop conversation
   const handleStop = () => {
