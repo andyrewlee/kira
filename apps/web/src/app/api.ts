@@ -5,14 +5,26 @@ const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
 
 export async function seedDemo(): Promise<void> {
   if (USE_FAKE_CONTEXT) return;
-  // TODO: call Convex mutation seedDemoMeeting
-  console.warn("seedDemo(): backend wiring not implemented");
+  await fetch(`${API_BASE_URL}/seedDemoMeeting`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({ userId: "demo-user" }),
+  }).then(assertOk);
 }
 
 export async function resetMeeting(meetingId: string): Promise<void> {
   if (USE_FAKE_CONTEXT) return;
-  // TODO: call Convex mutation resetMeeting
-  console.warn("resetMeeting(): backend wiring not implemented", meetingId);
+  await fetch(`${API_BASE_URL}/resetMeeting`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({ meetingId }),
+  }).then(assertOk);
 }
 
 export async function briefMe(): Promise<void> {
@@ -22,4 +34,9 @@ export async function briefMe(): Promise<void> {
 
 export function getAuthHeader() {
   return { Authorization: `Bearer ${AUTH_BEARER}` };
+}
+
+function assertOk(res: Response) {
+  if (!res.ok) throw new Error(`Request failed: ${res.status} ${res.statusText}`);
+  return res;
 }
