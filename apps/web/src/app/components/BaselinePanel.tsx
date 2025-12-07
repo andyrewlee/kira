@@ -7,12 +7,14 @@ interface Props {
   onAddTurn?: () => void;
   onChat?: () => void;
   onRefreshNotes?: () => void;
+  onSTT?: () => void;
   transcript?: string[];
   notes?: string[];
   summary?: string;
+  lastSTT?: string;
 }
 
-export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAddTurn, onChat, onRefreshNotes, transcript = [], notes = [], summary = "" }) => {
+export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAddTurn, onChat, onRefreshNotes, onSTT, transcript = [], notes = [], summary = "", lastSTT = "" }) => {
   return (
     <div style={{ padding: "1rem", background: "#0f172a", color: "#e2e8f0", minHeight: "100vh" }}>
       <h1 style={{ margin: 0, fontSize: "20px" }}>Kira Meeting</h1>
@@ -25,6 +27,7 @@ export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAdd
         <button onClick={onAddTurn} style={buttonStyle}>Add demo turn</button>
         <button onClick={onChat} style={buttonStyle}>Ask: what did we decide?</button>
         <button onClick={onRefreshNotes} style={buttonStyle}>Refresh notes (stub)</button>
+        <button onClick={onSTT} style={buttonStyle}>Fake STT ingest</button>
       </div>
 
       <div style={cardStyle}>
@@ -45,6 +48,13 @@ export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAdd
         <h2 style={sectionTitle}>Summary</h2>
         <p style={{ color: "#cbd5e1", fontSize: "14px" }}>{summary || "No summary yet."}</p>
       </div>
+
+      {lastSTT ? (
+        <div style={cardStyle}>
+          <h2 style={sectionTitle}>Last STT</h2>
+          <p style={{ color: "#cbd5e1", fontSize: "14px" }}>{lastSTT}</p>
+        </div>
+      ) : null}
     </div>
   );
 };

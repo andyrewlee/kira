@@ -59,6 +59,17 @@ export async function briefMe(text: string, voice: string = "una", speed: number
   return await res.blob();
 }
 
+export async function sttBase64(audioBase64: string, format: string = "mp3", meetingId?: string, speakerKey: string = "me") {
+  const headers = await buildAuthHeaders();
+  const res = await fetch(`${API_BASE_URL}/stt`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ audio: audioBase64, format, meetingId, speakerKey }),
+  });
+  if (!res.ok) throw new Error(`STT failed ${res.status}`);
+  return (await res.json()) as { text: string; meetingId?: string };
+}
+
 async function getAuthToken(): Promise<string> {
   if (typeof window !== "undefined") {
     // Prefer Clerk if available

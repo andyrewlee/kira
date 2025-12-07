@@ -4,6 +4,7 @@ import { useAudioSessionState } from "./state";
 import { BaselinePanel } from "./components/BaselinePanel";
 import { ToastProvider, useToast } from "./toast/ToastContext";
 import { briefMe, resetMeeting, seedDemo, chat, refreshNotes } from "./api";
+import { sttBase64 } from "./api";
 import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeConvex";
 import {
   fetchMeetingContext as fetchMeetingContextConvex,
@@ -23,6 +24,7 @@ function MeetingAppInner() {
   const audioSession = useAudioSessionState();
   const { addToast } = useToast();
   const [context, setContext] = React.useState<MeetingContextPayload | null>(null);
+  const [lastSTT, setLastSTT] = React.useState<string>("");
   const meetingId = "demo-meeting";
 
   // Ensure a token exists in dev to satisfy backend auth
@@ -134,6 +136,20 @@ function MeetingAppInner() {
     }
   };
 
+  const handleSTT = async () => {
+    try {
+      // Demo: reuse Brief Me audio summary as fake input for STT
+      const fakeAudio = btoa("fake-audio" + Date.now());
+      const { text } = await sttBase64(fakeAudio, "mp3", meetingId, "me");
+      setLastSTT(text);
+      await loadContext();
+      addToast("STT processed", "success");
+    } catch (err) {
+      console.error(err);
+      addToast("STT failed", "error");
+    }
+  };
+
   const loadContext = React.useCallback(async () => {
     try {
       const ctx = USE_FAKE_CONTEXT
@@ -169,9 +185,11 @@ function MeetingAppInner() {
           onAddTurn={handleAddTurn}
           onChat={handleChat}
           onRefreshNotes={handleRefreshNotes}
+          onSTT={handleSTT}
           transcript={(context?.turns || []).map((t) => `${context?.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)}
           notes={context?.notes || []}
           summary={context?.summary || ""}
+          lastSTT={lastSTT}
         />
         <div style={{ padding: "0.75rem 1rem", background: "#0f172a", color: "#94a3b8", borderTop: "1px solid #1f2937" }}>
           Audio session state: <span style={{ color: "#e2e8f0" }}>{audioSession.state}</span>
