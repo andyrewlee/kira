@@ -1,10 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { WebRTCDemo } from "./webrtc/App";
+import { MeetingApp } from "./app/MeetingApp";
 import "./webrtc/index.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <WebRTCDemo />
+    <MeetingApp />
   </React.StrictMode>
 );
