@@ -179,7 +179,7 @@ This avoids putting the Clerk token in the WS URL.
 **Goal:** end-to-end demo without mic, then wire in the WebRTC voice panel once baseline UI is stable.
 
 **Status:** WebRTC panel vendored, gated by `USE_WEBRTC_DESKTOP`, pushes meeting context via Convex client (fake fallback flag), basic fallback alert. Needs main meeting UI integration + toasts/state-machine hooks.
-**Current fallback:** baseline panel uses in-memory backend; auto-seeds demo meeting on missing context.
+**Current fallback:** baseline panel uses in-memory backend; auto-seeds demo meeting on missing context. Next: real mic capture → /stt; tighten auth (disable dev bearer in prod); manual smoke checklist.
 **TODO:** replace demo bearer with Clerk session token; swap in Convex client when deployment is set.
 
 ### 5.1 Baseline UI
