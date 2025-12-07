@@ -12,7 +12,9 @@ import { useWebRTCStats } from "./hooks/useWebRTCStats";
 import { useAudioStream } from "./hooks/useAudioStream";
 import type { Message, TranscriptEntry } from "./types/messages";
 import { fetchMeetingContext } from "../context/fakeConvex";
-import { renderContextText } from "@kira/shared/context";
+import { renderContextText } from "@shared/context";
+
+const WEBRTC_ENABLED = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 
 function App() {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -196,6 +198,10 @@ function App() {
   // Start conversation
   const handleStart = async () => {
     try {
+      if (!WEBRTC_ENABLED) {
+        fallbackToBaseline();
+        return;
+      }
       // Clear logs and transcript
       clearLogs();
       setTranscript([]);
@@ -258,7 +264,12 @@ function App() {
         flexDirection: "column",
         overflow: "hidden",
       }}
-    >
+      >
+      {!WEBRTC_ENABLED ? (
+        <div style={{ padding: "1rem", color: "#f5c542" }}>
+          WebRTC voice agent disabled (`USE_WEBRTC_DESKTOP=0`). Using baseline briefing.
+        </div>
+      ) : null}
       <div style={{ padding: "1rem 1rem 0 1rem" }}>
         <TopBar isConnected={isConnected} isConnecting={isConnecting} provider={provider} connectionQuality={connectionQuality} />
       </div>
