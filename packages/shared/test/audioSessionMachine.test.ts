@@ -1,4 +1,5 @@
 import { strict as assert } from "assert";
+import { test } from "vitest";
 import { INITIAL_AUDIO_SESSION_STATE, transition } from "../src/audioSessionMachine";
 
 test("playingBriefing + INTERRUPT -> interrupted", () => {

@@ -13,9 +13,23 @@
     "dev:web": "npm run dev -w @kira/web",
     "dev:backend": "npm run dev -w @kira/backend",
     "dev": "npm run dev:backend & npm run dev:web",
-    "test": "npm -ws test"
+    "lint": "eslint \"{apps,backend,packages,convex,tests}/**/*.{ts,tsx,js,jsx}\"",
+    "typecheck": "npm run typecheck:all",
+    "typecheck:all": "tsc -p apps/web/tsconfig.json --noEmit && tsc -p backend/tsconfig.json --noEmit && tsc -p convex/tsconfig.json --noEmit && tsc -p packages/shared/tsconfig.json --noEmit",
+    "test": "npm run test:core",
+    "test:core": "npm run test -w @kira/shared --if-present && npm run test -w @kira/tests --if-present"
   },
   "dependencies": {
     "convex": "^1.14.1"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.18.1",
+    "@typescript-eslint/parser": "^8.18.1",
+    "eslint": "^9.13.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10"
   }
 }

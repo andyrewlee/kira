@@ -1,6 +1,6 @@
 // Placeholder Convex client wiring. Replace with real Convex-generated client.
-import { MeetingContextPayload } from "@shared/context";
-import { getMeetingContext, seedDemoMeeting, resetMeeting, appendTurn } from "../../../convex/_generated/api";
+import type { MeetingContextPayload } from "@shared/context";
+import { getMeetingContext, seedDemoMeeting, resetMeeting, appendTurn } from "convex/_generated/api";
 import { ConvexHttpClient } from "convex/browser";
 
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL;

@@ -10,10 +10,11 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "tsx test/**/*.test.ts"
+    "test": "vitest run"
   },
   "devDependencies": {
     "tsx": "^4.7.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^1.6.0"
   }
 }

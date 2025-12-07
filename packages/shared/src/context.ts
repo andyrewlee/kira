@@ -1,4 +1,5 @@
 import type { MeetingContextPayload } from "./apiTypes";
+export type { MeetingContextPayload } from "./apiTypes";
 
 export function renderContextText(ctx: MeetingContextPayload): string {
   const turnsText = ctx.turns.map((t) => `${ctx.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`).join("\n");

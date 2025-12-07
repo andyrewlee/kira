@@ -1,4 +1,4 @@
-import { defineSchema, defineTable } from "convex/schema";
+import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
@@ -8,7 +8,7 @@ export default defineSchema({
     startedAt: v.number(),
     notes: v.array(v.string()),
     summary: v.string(),
-    speakerAliases: v.record(v.string()),
+    speakerAliases: v.record(v.string(), v.string()),
     templateId: v.optional(v.string()),
     privacy: v.optional(v.union(v.literal("private"), v.literal("shared"))),
   }).index("by_user", ["userId"]),
@@ -21,4 +21,4 @@ export default defineSchema({
     ts: v.number(),
     source: v.union(v.literal("human"), v.literal("system"), v.literal("llm")),
   }).index("by_meeting_ts", ["meetingId", "ts"]),
-});
+}, { strictTableNameTypes: true });

@@ -1,4 +1,5 @@
 import { strict as assert } from "assert";
+import { test } from "vitest";
 import { transition } from "../src/audioSessionMachine";
 
 test("playingBriefing + STOP_PLAYBACK -> idle", () => {

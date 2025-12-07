@@ -14,7 +14,6 @@ import {
 } from "../context/convexClient";
 import { MeetingContextPayload, renderContextText } from "@shared";
 import { playMp3Blob } from "./audio";
-import { getAuthHeader } from "./api";
 import { blobToBase64 } from "./utils";
 
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
@@ -214,7 +213,7 @@ function MeetingAppInner() {
           onChat={handleChat}
           onRefreshNotes={handleRefreshNotes}
           onSTT={handleSTT}
-          transcript={(context?.turns || []).map((t) => `${context?.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)}
+          transcript={(context?.turns || []).map((t: any) => `${context?.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)}
           notes={context?.notes || []}
           summary={context?.summary || ""}
           lastSTT={lastSTT}

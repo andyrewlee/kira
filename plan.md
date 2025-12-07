@@ -67,6 +67,7 @@ This plan keeps the **Granola parity** rules **and** adds a **WebRTC voice agent
 
 ### Done when
 - You can flip all flags and the app still boots / demo mode works.
+- Tooling guardrails: Husky pre-commit runs repo-wide lint, typecheck, tests, then lint-staged (Dec 7).
 
 ---
 
