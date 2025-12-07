@@ -3,7 +3,7 @@ import { WebRTCDemo } from "../webrtc";
 import { useAudioSessionState } from "./state";
 import { BaselinePanel } from "./components/BaselinePanel";
 import { ToastProvider, useToast } from "./toast/ToastContext";
-import { briefMe, resetMeeting, seedDemo, chat } from "./api";
+import { briefMe, resetMeeting, seedDemo, chat, refreshNotes } from "./api";
 import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeConvex";
 import { fetchMeetingContext as fetchMeetingContextConvex } from "../context/convexClient";
 import { MeetingContextPayload, renderContextText } from "@shared";
@@ -90,6 +90,17 @@ function MeetingAppInner() {
     }
   };
 
+  const handleRefreshNotes = async () => {
+    try {
+      await refreshNotes(meetingId);
+      await loadContext();
+      addToast("Notes refreshed (stub)", "success");
+    } catch (err) {
+      console.error(err);
+      addToast("Notes refresh failed", "error");
+    }
+  };
+
   const loadContext = React.useCallback(async () => {
     try {
       const ctx = USE_FAKE_CONTEXT
@@ -124,6 +135,7 @@ function MeetingAppInner() {
           onBrief={handleBrief}
           onAddTurn={handleAddTurn}
           onChat={handleChat}
+          onRefreshNotes={handleRefreshNotes}
           transcript={(context?.turns || []).map((t) => `${context?.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)}
           notes={context?.notes || []}
           summary={context?.summary || ""}

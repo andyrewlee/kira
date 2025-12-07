@@ -27,6 +27,20 @@ export async function resetMeeting(meetingId: string): Promise<void> {
   }).then(assertOk);
 }
 
+export async function refreshNotes(meetingId: string): Promise<{ summary: string; notes: string[] }> {
+  if (USE_FAKE_CONTEXT) return { summary: "Fake summary", notes: ["Fake note"] };
+  const res = await fetch(`${API_BASE_URL}/notes/refresh`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({ meetingId }),
+  });
+  if (!res.ok) throw new Error(`Notes refresh failed ${res.status}`);
+  return (await res.json()) as { summary: string; notes: string[] };
+}
+
 export async function chat(meetingId: string, message: string): Promise<string> {
   if (USE_FAKE_CONTEXT) return "Stub chat (fake context).";
   const res = await fetch(`${API_BASE_URL}/chat`, {
