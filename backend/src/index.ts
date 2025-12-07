@@ -4,6 +4,7 @@ import cors from "cors";
 import ExpressWs from "express-ws";
 import { requireAuth } from "./middleware/auth";
 import { registerWebrtcRoutes } from "./webrtc/routes";
+import { store } from "./store";
 
 const { app } = ExpressWs(express() as any);
 
@@ -23,6 +24,24 @@ app.post("/tts", requireAuth, (_req, res) => res.status(501).json({ error: "TTS 
 app.post("/chat", requireAuth, (_req, res) => res.status(501).json({ error: "Chat not implemented" }));
 app.post("/meetings/:id/ingest", requireAuth, (_req, res) => res.status(501).json({ error: "Ingest not implemented" }));
 app.post("/notes/refresh", requireAuth, (_req, res) => res.status(501).json({ error: "Notes refresh not implemented" }));
+
+// Temporary in-memory meeting handlers (replace with Convex wiring)
+app.post("/seedDemoMeeting", requireAuth, (req, res) => {
+  const meetingId = store.seedDemo(req.body?.userId || "demo-user");
+  res.json({ meetingId });
+});
+
+app.post("/resetMeeting", requireAuth, (req, res) => {
+  const meetingId = req.body?.meetingId || "demo-meeting";
+  store.resetMeeting(meetingId);
+  res.json({ ok: true });
+});
+
+app.get("/meetings/:id/context", requireAuth, (req, res) => {
+  const ctx = store.getContext(req.params.id, Number(req.query.tail) || 60);
+  if (!ctx) return res.status(404).json({ error: "Meeting not found" });
+  res.json(ctx);
+});
 
 // Phase 5 WebRTC relay (xAI example integration)
 registerWebrtcRoutes({ app: app as any, requireAuth });
