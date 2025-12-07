@@ -96,6 +96,8 @@ This saves you later when Electron differs from Expo:
 ## Phase 2 — Convex schema + seed demo meeting (your safety net)
 **Goal:** deterministic demo even if audio breaks on stage.
 
+**Status:** ✅ Schema + mutations/queries implemented (`convex/src`), including seed/reset and `getMeetingContext`.
+
 ### 2.1 Schema
 **meetings**
 - `userId, title, startedAt`
@@ -119,6 +121,8 @@ This saves you later when Electron differs from Expo:
 
 ## Phase 3 — Auth + CORS + “no unauth path”
 **Goal:** don’t leak xAI keys; don’t get surprised by 401s on stage.
+
+**Status:** 🔸 Auth stub verifies JWT with `CLERK_JWT_PUBLIC_KEY` if set; CORS allowlist wired. Needs real Clerk validation + frontend bearer propagation.
 
 - Clerk JWT template `convex` + Convex auth config
 - Backend: require Clerk bearer on **every** HTTP endpoint (`/stt`, `/tts`, `/chat`, `/ingest`, `/webrtc/*`, calendar)
@@ -171,6 +175,8 @@ This avoids putting the Clerk token in the WS URL.
 
 ## Phase 5 — Web UI (+ WebRTC agent panel integration)
 **Goal:** end-to-end demo without mic, then wire in the WebRTC voice panel once baseline UI is stable.
+
+**Status:** WebRTC panel vendored, gated by `USE_WEBRTC_DESKTOP`, pushes meeting context via Convex client (fake fallback flag), basic fallback alert. Needs main meeting UI integration + toasts/state-machine hooks.
 
 ### 5.1 Baseline UI
 - Meeting screen:
