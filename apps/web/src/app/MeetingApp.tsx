@@ -12,12 +12,20 @@ import { getAuthHeader } from "./api";
 
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
+const DEV_TOKEN = import.meta.env.VITE_DEMO_BEARER || "dev-token";
 
 function MeetingAppInner() {
   const audioSession = useAudioSessionState();
   const { addToast } = useToast();
   const [context, setContext] = React.useState<MeetingContextPayload | null>(null);
   const meetingId = "demo-meeting";
+
+  // Ensure a token exists in dev to satisfy backend auth
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && !window.localStorage.getItem("authToken")) {
+      window.localStorage.setItem("authToken", DEV_TOKEN);
+    }
+  }, []);
 
   const handleSeed = async () => {
     await seedDemo();
