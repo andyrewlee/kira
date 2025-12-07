@@ -180,6 +180,7 @@ This avoids putting the Clerk token in the WS URL.
 
 **Status:** WebRTC panel vendored, gated by `USE_WEBRTC_DESKTOP`, pushes meeting context via Convex client (fake fallback flag), basic fallback alert. Needs main meeting UI integration + toasts/state-machine hooks.
 **Current fallback:** baseline panel uses in-memory backend; auto-seeds demo meeting on missing context.
+**TODO:** replace demo bearer with Clerk session token; swap in Convex client when deployment is set.
 
 ### 5.1 Baseline UI
 - Meeting screen:
