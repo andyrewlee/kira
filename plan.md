@@ -97,7 +97,7 @@ This saves you later when Electron differs from Expo:
 **Goal:** deterministic demo even if audio breaks on stage.
 
 **Status:** ✅ Schema + mutations/queries implemented (`convex/src`), including seed/reset and `getMeetingContext`.
-**Current fallback:** in-memory backend endpoints `/seedDemoMeeting`, `/resetMeeting`, `/meetings/:id/context`, `/meetings/:id/ingest` until Convex deployment is wired.
+**Current:** backend endpoints now call Convex first (seed/reset/context/ingest/notes/chat) with in-memory fallback.
 
 ### 2.1 Schema
 **meetings**
