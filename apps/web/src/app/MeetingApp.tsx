@@ -6,7 +6,7 @@ import { ToastProvider, useToast } from "./toast/ToastContext";
 import { briefMe, resetMeeting, seedDemo } from "./api";
 import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeConvex";
 import { fetchMeetingContext as fetchMeetingContextConvex } from "../context/convexClient";
-import { MeetingContextPayload, renderContextText } from "@kira/shared";
+import { MeetingContextPayload, renderContextText } from "@shared";
 
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";

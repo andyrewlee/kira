@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AudioSessionState, INITIAL_AUDIO_SESSION_STATE, transition } from "@kira/shared";
+import { AudioSessionState, INITIAL_AUDIO_SESSION_STATE, transition } from "@shared";
 
 export function useAudioSessionState() {
   const [state, setState] = useState<AudioSessionState>(INITIAL_AUDIO_SESSION_STATE);
