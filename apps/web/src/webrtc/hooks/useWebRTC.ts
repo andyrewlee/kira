@@ -18,6 +18,12 @@ const emitWebRTCError = (msg: string) => {
   }
 };
 
+const emitWebRTCFallback = (msg?: string) => {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("webrtc:fallback", { detail: msg }));
+  }
+};
+
 type SessionResponse =
   | {
       sessionId: string;
@@ -325,6 +331,7 @@ export function useWebRTC(
           console.error(`[${getTimestamp()}] ⏱️ WebRTC connect timeout after ${timeoutMs}ms`);
           ws.close();
           emitWebRTCError("WebRTC connect timeout");
+          emitWebRTCFallback("timeout");
           reject(new Error("WebRTC connect timeout"));
         }, timeoutMs);
 
@@ -392,6 +399,7 @@ export function useWebRTC(
     } catch (error) {
       console.error("❌ Failed to connect:", error);
       emitWebRTCError("WebRTC connect failed");
+      emitWebRTCFallback("connect_failed");
       throw error;
     }
   }, [setupPeerConnection, setupDataChannel]);

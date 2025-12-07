@@ -20,6 +20,7 @@ const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === "1";
 const DEV_TOKEN = import.meta.env.VITE_DEMO_BEARER || "dev-token";
+const AUDIO_RETENTION = import.meta.env.VITE_AUDIO_RETENTION || "discard";
 
 function MeetingAppInner() {
   const audioSession = useAudioSessionState();
@@ -27,6 +28,7 @@ function MeetingAppInner() {
   const [context, setContext] = React.useState<MeetingContextPayload | null>(null);
   const [lastSTT, setLastSTT] = React.useState<string>("");
   const [isRecording, setIsRecording] = React.useState<boolean>(false);
+  const [webrtcAvailable, setWebrtcAvailable] = React.useState<boolean>(USE_WEBRTC_DESKTOP);
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const chunksRef = React.useRef<BlobPart[]>([]);
   const meetingId = "demo-meeting";
@@ -42,13 +44,17 @@ function MeetingAppInner() {
       const detail = (e as CustomEvent).detail as string;
       addToast(detail || "WebRTC error", "error");
       audioSession.send({ type: "CANCEL" });
+      setWebrtcAvailable(false); // fallback to baseline
     };
+    const onWebRTCFallback = () => setWebrtcAvailable(false);
     if (typeof window !== "undefined") {
       window.addEventListener("webrtc:error", onWebRTCError as any);
+      window.addEventListener("webrtc:fallback", onWebRTCFallback as any);
     }
     return () => {
       if (typeof window !== "undefined") {
         window.removeEventListener("webrtc:error", onWebRTCError as any);
+        window.removeEventListener("webrtc:fallback", onWebRTCFallback as any);
       }
     };
   }, []);
@@ -165,7 +171,7 @@ function MeetingAppInner() {
         await loadContext();
         addToast("STT processed", "success");
         stream.getTracks().forEach((t) => t.stop());
-        if (import.meta.env.VITE_AUDIO_RETENTION !== "keep_local_for_retry") {
+        if (AUDIO_RETENTION !== "keep_local_for_retry") {
           chunksRef.current = [];
         }
       };
@@ -227,11 +233,11 @@ function MeetingAppInner() {
         </div>
       </div>
       <div style={{ borderLeft: "1px solid #1f2937" }}>
-        {USE_WEBRTC_DESKTOP ? (
+        {webrtcAvailable ? (
           <WebRTCDemo />
         ) : (
           <div style={{ padding: "2rem", color: "#fbbf24", background: "#111827", height: "100%" }}>
-            WebRTC voice agent disabled (`USE_WEBRTC_DESKTOP=0`). Baseline briefing only.
+            Voice agent unavailable — falling back to baseline briefing.
           </div>
         )}
       </div>
