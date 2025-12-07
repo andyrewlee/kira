@@ -45,6 +45,7 @@ interface UseWebRTCResult {
   connect: (sampleRate: number) => Promise<void>;
   disconnect: () => void;
   sendMessage: (message: Message) => void;
+  sendContext: (text: string) => void;
   debugLogs: DebugLog[];
   clearLogs: () => void;
   provider: string;
@@ -108,6 +109,22 @@ export function useWebRTC(
       console.error("Error sending message:", error);
     }
   }, [addLog]);
+
+  /**
+   * Send meeting context as a system message
+   */
+  const sendContext = useCallback((text: string) => {
+    const trimmed = text?.trim();
+    if (!trimmed) return;
+    sendMessage({
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: "system",
+        content: [{ type: "input_text", text: trimmed }],
+      },
+    } as any);
+  }, [sendMessage]);
 
   /**
    * Set up peer connection
@@ -454,6 +471,7 @@ export function useWebRTC(
     connect,
     disconnect,
     sendMessage,
+    sendContext,
     debugLogs,
     clearLogs,
     provider,
