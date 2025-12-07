@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
-// Minimal Clerk JWT validation stub: expects Bearer <token> with a public key env.
-// Replace with Clerk SDK verification when available. This keeps the route contract enforced.
+// Minimal auth: verify RS256 JWT when public key is provided; otherwise allow dev.
 const CLERK_JWT_PUBLIC_KEY = process.env.CLERK_JWT_PUBLIC_KEY || "";
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -12,9 +11,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
   const token = header.slice("Bearer ".length);
 
-  // Allow bypass in dev if no key is configured
   if (!CLERK_JWT_PUBLIC_KEY) {
-    (req as any).auth = { bypass: true };
+    (req as any).auth = { bypass: true, token };
     return next();
   }
 
@@ -28,7 +26,5 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 export function validateWsToken(token: string | undefined): boolean {
-  if (!token) return false;
-  // Token is generated server-side per session; session-manager validates equality.
-  return true;
+  return Boolean(token);
 }
