@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express, { Response } from "express";
-import type { Timeout } from "node:timers";
 import cors from "cors";
 import ExpressWs from "express-ws";
 import { requireAuth } from "./middleware/auth";
@@ -24,6 +23,7 @@ const DEBOUNCE_TURNS = Number(process.env.DEBOUNCE_TURNS || 3);
 const MAX_TURNS_CONTEXT = Number(process.env.MAX_TURNS_CONTEXT || 60);
 const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 60000);
 const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX || 30);
+const MOCK_XAI = process.env.MOCK_XAI === "1";
 
 // Simple rate limiter per token+endpoint
 const rateBuckets = new Map<string, number[]>();
@@ -49,7 +49,7 @@ function pushEvent(evt: DebugEvent) {
 // Debounce refresh tracking
 const refreshTrack = new Map<
   string,
-  { count: number; timer: Timeout | null }
+  { count: number; timer: NodeJS.Timeout | null }
 >();
 
 async function refreshNotesInternal(meetingId: string) {
@@ -71,31 +71,36 @@ app.post("/stt", requireAuth, async (req, res) => {
   const token = (req.headers["authorization"] as string | undefined)?.slice("Bearer ".length);
   if (checkRateLimit(token, "/stt")) return res.status(429).json({ error: "Rate limit" });
   try {
-    const XAI_API_KEY = process.env.XAI_API_KEY;
-    if (!XAI_API_KEY) return res.status(500).json({ error: "Missing XAI_API_KEY" });
     const audio = req.body?.audio;
     const format = req.body?.format || "mp3";
     if (!audio) return res.status(400).json({ error: "Missing audio base64" });
 
-    const binary = Buffer.from(audio, "base64");
-    const form = new FormData();
-    form.append("file", new Blob([binary]), `audio.${format}`);
-    form.append("model", "grok-1" /* placeholder model name */);
+    let text = "";
+    if (MOCK_XAI) {
+      text = "mock transcription";
+    } else {
+      const XAI_API_KEY = process.env.XAI_API_KEY;
+      if (!XAI_API_KEY) return res.status(500).json({ error: "Missing XAI_API_KEY" });
+      const binary = Buffer.from(audio, "base64");
+      const form = new FormData();
+      form.append("file", new Blob([binary]), `audio.${format}`);
+      form.append("model", "grok-1" /* placeholder model name */);
 
-    const sttRes = await fetch("https://api.x.ai/v1/audio/transcriptions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${XAI_API_KEY}`,
-      },
-      body: form,
-    });
-    if (!sttRes.ok) {
-      const txt = await sttRes.text();
-      console.error("STT upstream error", txt);
-      return res.status(502).json({ error: "STT upstream failed", details: txt });
+      const sttRes = await fetch("https://api.x.ai/v1/audio/transcriptions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${XAI_API_KEY}`,
+        },
+        body: form,
+      });
+      if (!sttRes.ok) {
+        const txt = await sttRes.text();
+        console.error("STT upstream error", txt);
+        return res.status(502).json({ error: "STT upstream failed", details: txt });
+      }
+      const data: any = await sttRes.json();
+      text = data.text || "";
     }
-    const data: any = await sttRes.json();
-    const text = data.text || "";
 
     // Optional ingest into Convex/store
     const meetingId = req.body?.meetingId;
@@ -124,11 +129,18 @@ app.post("/tts", requireAuth, async (req, res) => {
   const token = (req.headers["authorization"] as string | undefined)?.slice("Bearer ".length);
   if (checkRateLimit(token, "/tts")) return res.status(429).json({ error: "Rate limit" });
   try {
-  const XAI_API_KEY = process.env.XAI_API_KEY;
-    if (!XAI_API_KEY) return res.status(500).json({ error: "Missing XAI_API_KEY" });
     const text = req.body?.text || "";
     const voice = req.body?.voice || process.env.VOICE || "una";
     const speed = req.body?.speed || 1.0;
+    if (MOCK_XAI) {
+      const buf = Buffer.from("mock-mp3");
+      res.setHeader("Content-Type", "audio/mpeg");
+      pushEvent({ ts: new Date().toISOString(), type: "tts", details: { bytes: buf.length, mock: true } });
+      return res.send(buf);
+    }
+
+    const XAI_API_KEY = process.env.XAI_API_KEY;
+    if (!XAI_API_KEY) return res.status(500).json({ error: "Missing XAI_API_KEY" });
     const ttsRes = await fetch("https://api.x.ai/v1/audio/speech", {
       method: "POST",
       headers: {
@@ -169,6 +181,11 @@ app.post("/chat", requireAuth, async (req, res) => {
     .join(" | ")}`;
 
   try {
+    if (MOCK_XAI) {
+      const reply = `mock reply to: ${message}`;
+      pushEvent({ ts: new Date().toISOString(), type: "chat", meetingId, details: { reply, mock: true } });
+      return res.json({ reply });
+    }
     const xaiRes = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -216,6 +233,16 @@ async function handleNotesRefresh(meetingId: string, returnResponse: boolean = t
     .join(" | ")}. Existing notes: ${ctx.notes.join(" | ")}. Current summary: ${ctx.summary}`;
 
   try {
+    if (MOCK_XAI) {
+      const notes = ctx.notes.length ? ctx.notes : ["mock note"];
+      const summary = ctx.summary || "mock summary";
+      if (convexClient) await convexSetNotes(meetingId, notes, summary);
+      else store.setNotesAndSummary(meetingId, notes, summary);
+      pushEvent({ ts: new Date().toISOString(), type: "notes:set", meetingId, details: { summary, mock: true } });
+      if (returnResponse && res) res.json({ summary, notes, mock: true });
+      return;
+    }
+
     const xaiRes = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
