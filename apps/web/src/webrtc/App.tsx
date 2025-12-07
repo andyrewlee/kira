@@ -11,10 +11,12 @@ import { useWebRTC } from "./hooks/useWebRTC";
 import { useWebRTCStats } from "./hooks/useWebRTCStats";
 import { useAudioStream } from "./hooks/useAudioStream";
 import type { Message, TranscriptEntry } from "./types/messages";
-import { fetchMeetingContext } from "../context/fakeConvex";
+import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeConvex";
+import { fetchMeetingContext as fetchMeetingContextConvex } from "../context/convexClient";
 import { renderContextText } from "@shared/context";
 
 const WEBRTC_ENABLED = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
+const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
 
 function App() {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -165,7 +167,9 @@ function App() {
   // Push meeting context (stub; replace with Convex fetch)
   const pushMeetingContext = useCallback(async () => {
     try {
-      const ctx = await fetchMeetingContext(meetingIdRef.current);
+      const ctx = USE_FAKE_CONTEXT
+        ? await fetchMeetingContextFake(meetingIdRef.current)
+        : await fetchMeetingContextConvex(meetingIdRef.current);
       const contextPayload = renderContextText(ctx);
       sendContextRef.current?.(contextPayload);
       console.log("📨 Sent meeting context to agent");
