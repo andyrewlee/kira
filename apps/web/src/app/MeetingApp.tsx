@@ -5,7 +5,12 @@ import { BaselinePanel } from "./components/BaselinePanel";
 import { ToastProvider, useToast } from "./toast/ToastContext";
 import { briefMe, resetMeeting, seedDemo, chat, refreshNotes } from "./api";
 import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeConvex";
-import { fetchMeetingContext as fetchMeetingContextConvex } from "../context/convexClient";
+import {
+  fetchMeetingContext as fetchMeetingContextConvex,
+  convexSeedDemo,
+  convexResetMeeting,
+  convexAppendTurn,
+} from "../context/convexClient";
 import { MeetingContextPayload, renderContextText } from "@shared";
 import { playMp3Blob } from "./audio";
 import { getAuthHeader } from "./api";
@@ -42,12 +47,28 @@ function MeetingAppInner() {
   }, []);
 
   const handleSeed = async () => {
-    await seedDemo();
+    if (USE_FAKE_CONTEXT) {
+      await seedDemo();
+    } else {
+      try {
+        await convexSeedDemo("demo-user");
+      } catch {
+        await seedDemo(); // backend fallback
+      }
+    }
     await loadContext();
     addToast("Demo seeded", "info");
   };
   const handleReset = async () => {
-    await resetMeeting(meetingId);
+    if (USE_FAKE_CONTEXT) {
+      await resetMeeting(meetingId);
+    } else {
+      try {
+        await convexResetMeeting(meetingId);
+      } catch {
+        await resetMeeting(meetingId); // backend fallback
+      }
+    }
     await loadContext();
     addToast("Meeting reset", "info");
   };
@@ -67,11 +88,23 @@ function MeetingAppInner() {
 
   const handleAddTurn = async () => {
     try {
-      await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/meetings/${meetingId}/ingest`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeader() },
-        body: JSON.stringify({ channel: "mic", speakerKey: "me", text: "New demo turn at " + new Date().toLocaleTimeString(), ts: Date.now(), source: "human" }),
-      });
+      const text = "New demo turn at " + new Date().toLocaleTimeString();
+      if (USE_FAKE_CONTEXT) {
+        await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/meetings/${meetingId}/ingest`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getAuthHeader() },
+          body: JSON.stringify({ channel: "mic", speakerKey: "me", text, ts: Date.now(), source: "human" }),
+        });
+      } else {
+        await convexAppendTurn({
+          meetingId,
+          channel: "mic",
+          speakerKey: "me",
+          text,
+          ts: Date.now(),
+          source: "human",
+        });
+      }
       await loadContext();
       addToast("Added demo turn", "success");
     } catch (err) {
