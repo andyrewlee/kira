@@ -13,6 +13,7 @@ import {
   convexAppendTurn,
   convexSetNotes,
 } from "./convexClient";
+import fetch from "node-fetch";
 
 const { app } = ExpressWs(express() as any);
 
@@ -30,7 +31,7 @@ app.get("/health", (_req, res) => {
 app.post("/stt", requireAuth, (_req, res) => res.status(501).json({ error: "STT not implemented" }));
 app.post("/tts", requireAuth, async (req, res) => {
   try {
-    const XAI_API_KEY = process.env.XAI_API_KEY;
+  const XAI_API_KEY = process.env.XAI_API_KEY;
     if (!XAI_API_KEY) return res.status(500).json({ error: "Missing XAI_API_KEY" });
     const text = req.body?.text || "";
     const voice = req.body?.voice || process.env.VOICE || "una";
@@ -56,48 +57,107 @@ app.post("/tts", requireAuth, async (req, res) => {
     res.status(500).json({ error: "TTS failed" });
   }
 });
-// Stubbed chat: returns summary + last turn (Convex first, fallback store)
+// Chat: call Grok with meeting context (Convex preferred)
 app.post("/chat", requireAuth, async (req, res) => {
   const meetingId = req.body?.meetingId || "demo-meeting";
   const message = req.body?.message || "";
   let ctx: any = null;
   try {
-    if (convexClient) ctx = await convexGetContext(meetingId, 5);
+    if (convexClient) ctx = await convexGetContext(meetingId, 20);
   } catch (err) {
     console.error("Convex chat context failed", err);
   }
-  if (!ctx) ctx = store.getContext(meetingId, 5);
+  if (!ctx) ctx = store.getContext(meetingId, 20);
   if (!ctx) return res.status(404).json({ error: "Meeting not found" });
-  const lastTurn = ctx.turns[ctx.turns.length - 1];
-  res.json({
-    reply: `Stubbed chat: ${message ? "You asked: " + message + ". " : ""}Last turn: ${lastTurn ? lastTurn.text : "(none)"}. Summary: ${ctx.summary}`,
-  });
+
+  const system = `You are Kira, a meeting copilot. Use this meeting context only. Summary: ${ctx.summary}. Notes: ${ctx.notes.join(" | ")}. Recent turns: ${ctx.turns
+    .map((t: any) => `${ctx.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)
+    .join(" | ")}`;
+
+  try {
+    const xaiRes = await fetch("https://api.x.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.XAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "grok-beta",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: message },
+        ],
+      }),
+    });
+    if (!xaiRes.ok) {
+      const txt = await xaiRes.text();
+      console.error("Grok chat error", txt);
+      return res.status(502).json({ error: "Grok chat failed", details: txt });
+    }
+    const data = await xaiRes.json();
+    const reply = data.choices?.[0]?.message?.content || "";
+    res.json({ reply });
+  } catch (err) {
+    console.error("Grok chat exception", err);
+    res.status(500).json({ error: "Chat failed" });
+  }
 });
 
-// Stubbed notes refresh: summarizes last 3 turns and writes to Convex/store
+// Notes refresh: call Grok to produce notes/summary, write to Convex/store
 app.post("/notes/refresh", requireAuth, async (req, res) => {
   const meetingId = req.body?.meetingId || "demo-meeting";
   let ctx: any = null;
   try {
-    if (convexClient) ctx = await convexGetContext(meetingId, 10);
+    if (convexClient) ctx = await convexGetContext(meetingId, 40);
   } catch (err) {
     console.error("Convex notes context failed", err);
   }
-  if (!ctx) ctx = store.getContext(meetingId, 10);
+  if (!ctx) ctx = store.getContext(meetingId, 40);
   if (!ctx) return res.status(404).json({ error: "Meeting not found" });
-  const recent = ctx.turns.slice(-3).map((t: any) => t.text).join(". ");
-  const summary = recent ? `Recent: ${recent}` : ctx.summary;
-  const notes = ctx.notes.length ? ctx.notes : ["(stubbed notes) No new notes yet."];
+
+  const prompt = `Summarize this meeting. Provide concise notes (bullets) and a summary. Recent turns: ${ctx.turns
+    .map((t: any) => `${ctx.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)
+    .join(" | ")}. Existing notes: ${ctx.notes.join(" | ")}. Current summary: ${ctx.summary}`;
+
   try {
+    const xaiRes = await fetch("https://api.x.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.XAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "grok-beta",
+        messages: [
+          { role: "system", content: "Return JSON: {notes: [""], summary: ""}" },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!xaiRes.ok) {
+      const txt = await xaiRes.text();
+      console.error("Grok notes error", txt);
+      return res.status(502).json({ error: "Grok notes failed", details: txt });
+    }
+    const data = await xaiRes.json();
+    const content = data.choices?.[0]?.message?.content || "{}";
+    let parsed = { notes: ctx.notes, summary: ctx.summary } as any;
+    try {
+      parsed = JSON.parse(content);
+    } catch {}
+    const notes = Array.isArray(parsed.notes) ? parsed.notes : ctx.notes;
+    const summary = typeof parsed.summary === "string" ? parsed.summary : ctx.summary;
     if (convexClient) {
       await convexSetNotes(meetingId, notes, summary);
       return res.json({ summary, notes });
     }
+    store.setNotesAndSummary(meetingId, notes, summary);
+    res.json({ summary, notes, fallback: true });
   } catch (err) {
-    console.error("Convex setNotes failed", err);
+    console.error("Grok notes exception", err);
+    res.status(500).json({ error: "Notes refresh failed" });
   }
-  store.setNotesAndSummary(meetingId, notes, summary);
-  res.json({ summary, notes, fallback: true });
 });
 
 // Meeting handlers (Convex first, fallback to in-memory)
