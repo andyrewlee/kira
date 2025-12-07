@@ -124,7 +124,7 @@ This saves you later when Electron differs from Expo:
 **Goal:** don’t leak xAI keys; don’t get surprised by 401s on stage.
 
 **Status:** 🔸 Auth stub verifies JWT with `CLERK_JWT_PUBLIC_KEY` if set; CORS allowlist wired. Needs real Clerk validation + frontend bearer propagation.
-**Current fallback:** dev bearer stored in `localStorage` when no public key; backend bypass allowed.
+**Current fallback:** dev bearer stored in `localStorage` only when `DEV_MODE=1`; backend bypass gated by `DEV_MODE`.
 
 - Clerk JWT template `convex` + Convex auth config
 - Backend: require Clerk bearer on **every** HTTP endpoint (`/stt`, `/tts`, `/chat`, `/ingest`, `/webrtc/*`, calendar)
