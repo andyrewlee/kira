@@ -1,0 +1,14 @@
+{
+  "name": "kira",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "backend",
+    "convex",
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm -ws test"
+  }
+}
