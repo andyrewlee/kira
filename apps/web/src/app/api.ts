@@ -1,6 +1,6 @@
 // Minimal API helpers; replace with real implementations when backend is ready.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
-const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "dev-token";
+const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === "1";
 

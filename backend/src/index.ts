@@ -14,7 +14,6 @@ import {
   convexSetNotes,
 } from "./convexClient";
 import fetch, { Blob, FormData } from "node-fetch";
-import type { Timeout } from "node:timers";
 
 const { app } = ExpressWs(express() as any);
 
@@ -49,9 +48,10 @@ function pushEvent(evt: DebugEvent) {
 }
 
 // Debounce refresh tracking
+type TimeoutType = ReturnType<typeof setTimeout>;
 const refreshTrack = new Map<
   string,
-  { count: number; timer: Timeout | null }
+  { count: number; timer: TimeoutType | null }
 >();
 
 async function refreshNotesInternal(meetingId: string) {

@@ -18,8 +18,6 @@ import { blobToBase64 } from "./utils";
 
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
-const DEV_MODE = import.meta.env.VITE_DEV_MODE === "1";
-const DEV_TOKEN = import.meta.env.VITE_DEMO_BEARER || "";
 const AUDIO_RETENTION = import.meta.env.VITE_AUDIO_RETENTION || "discard";
 
 function MeetingAppInner() {
@@ -33,13 +31,8 @@ function MeetingAppInner() {
   const chunksRef = React.useRef<BlobPart[]>([]);
   const meetingId = "demo-meeting";
 
-  // Ensure a token exists in dev to satisfy backend auth
+  // Listen for WebRTC errors/fallbacks
   React.useEffect(() => {
-    // Dev convenience only: set a bearer token if none exists and dev mode is on.
-    if (DEV_MODE && typeof window !== "undefined" && !window.localStorage.getItem("authToken")) {
-      window.localStorage.setItem("authToken", DEV_TOKEN);
-    }
-
     const onWebRTCError = (e: Event) => {
       const detail = (e as CustomEvent).detail as string;
       addToast(detail || "WebRTC error", "error");
@@ -57,7 +50,7 @@ function MeetingAppInner() {
         window.removeEventListener("webrtc:fallback", onWebRTCFallback as any);
       }
     };
-  }, []);
+  }, [addToast, audioSession]);
 
   const handleSeed = async () => {
     if (USE_FAKE_CONTEXT) {
@@ -205,7 +198,7 @@ function MeetingAppInner() {
       }
       addToast("Failed to load meeting context", "error");
     }
-  }, []);
+  }, [addToast]);
 
   React.useEffect(() => {
     void loadContext();

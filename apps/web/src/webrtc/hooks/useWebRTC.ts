@@ -140,6 +140,53 @@ export function useWebRTC(
   }, [sendMessage]);
 
   /**
+   * Set up DataChannel handlers
+   */
+  const setupDataChannel = useCallback(() => {
+    const dc = dataChannelRef.current;
+    if (!dc) return;
+
+    dc.onopen = () => {
+      console.log(`[${getTimestamp()}] ✅ DataChannel opened`);
+      // Immediately update UI state when DataChannel is ready
+      setIsConnected(true);
+      setIsConnecting(false);
+      setConnectionQuality("good");
+    };
+
+    dc.onclose = () => {
+      console.log(`[${getTimestamp()}] ❌ DataChannel closed`);
+      setIsConnected(false);
+      setIsConnecting(false);
+    };
+
+    dc.onerror = (error) => {
+      console.error("❌ DataChannel error:", error);
+      emitWebRTCError("DataChannel error");
+      emitWebRTCFallback("datachannel_error");
+    };
+
+    dc.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data) as Message;
+
+        // Log non-audio messages
+        if (
+          message.type !== "response.output_audio.delta" &&
+          message.type !== "input_audio_buffer.append"
+        ) {
+          addLog("RECV", message.type, message);
+        }
+
+        // Forward to message handler
+        onMessage(message);
+      } catch (error) {
+        console.error("Error processing DataChannel message:", error);
+      }
+    };
+  }, [onMessage, addLog]);
+
+  /**
    * Set up peer connection
    */
   const setupPeerConnection = useCallback(() => {
@@ -217,52 +264,7 @@ export function useWebRTC(
     };
 
     return pc;
-  }, []);
-
-  /**
-   * Set up DataChannel handlers
-   */
-  const setupDataChannel = useCallback(() => {
-    const dc = dataChannelRef.current;
-    if (!dc) return;
-
-    dc.onopen = () => {
-      console.log(`[${getTimestamp()}] ✅ DataChannel opened`);
-      // Immediately update UI state when DataChannel is ready
-      setIsConnected(true);
-      setIsConnecting(false);
-      setConnectionQuality("good");
-    };
-
-    dc.onclose = () => {
-      console.log(`[${getTimestamp()}] ❌ DataChannel closed`);
-      setIsConnected(false);
-      setIsConnecting(false);
-    };
-
-    dc.onerror = (error) => {
-      console.error("❌ DataChannel error:", error);
-    };
-
-    dc.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data) as Message;
-
-        // Log non-audio messages
-        if (
-          message.type !== "response.output_audio.delta" &&
-          message.type !== "input_audio_buffer.append"
-        ) {
-          addLog("RECV", message.type, message);
-        }
-
-        // Forward to message handler
-        onMessage(message);
-      } catch (error) {
-        console.error("Error processing DataChannel message:", error);
-      }
-    };
-  }, [onMessage, addLog]);
+  }, [setupDataChannel]);
 
   /**
    * Connect to server

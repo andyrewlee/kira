@@ -32,6 +32,19 @@ function App() {
   // Store callback to start audio capture (used when XAI is ready)
   const startCaptureRef = useRef<((onAudioData: (base64Audio: string) => void) => void) | null>(null);
 
+  const pushMeetingContext = useCallback(async () => {
+    try {
+      const ctx = USE_FAKE_CONTEXT
+        ? await fetchMeetingContextFake(meetingIdRef.current)
+        : await fetchMeetingContextConvex(meetingIdRef.current);
+      const contextPayload = renderContextText(ctx);
+      sendContextRef.current?.(contextPayload);
+      console.log("📨 Sent meeting context to agent");
+    } catch (err) {
+      console.error("Failed to send meeting context", err);
+    }
+  }, []);
+
   // Handle incoming WebSocket messages
   const handleMessage = useCallback((message: Message) => {
     // Handle XAI ready signal - start capturing audio now
@@ -162,22 +175,9 @@ function App() {
         }
       }
     }
-  }, [playAudio, stopPlayback]);
+  }, [playAudio, stopPlayback, pushMeetingContext]);
 
   // Push meeting context (stub; replace with Convex fetch)
-  const pushMeetingContext = useCallback(async () => {
-    try {
-      const ctx = USE_FAKE_CONTEXT
-        ? await fetchMeetingContextFake(meetingIdRef.current)
-        : await fetchMeetingContextConvex(meetingIdRef.current);
-      const contextPayload = renderContextText(ctx);
-      sendContextRef.current?.(contextPayload);
-      console.log("📨 Sent meeting context to agent");
-    } catch (err) {
-      console.error("Failed to send meeting context", err);
-    }
-  }, []);
-
   const {
     isConnected,
     isConnecting,

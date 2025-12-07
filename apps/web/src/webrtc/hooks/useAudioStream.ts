@@ -183,27 +183,6 @@ export function useAudioStream(): UseAudioStreamReturn {
     console.log("Audio playback stopped (interrupted)");
   }, []);
 
-  // Play audio
-  const playAudio = useCallback((base64Audio: string) => {
-    try {
-      const audioContext = getAudioContext();
-      const float32Data = base64PCM16ToFloat32(base64Audio);
-      
-      console.log(`[Playback] Queueing audio chunk: ${float32Data.length} samples at ${audioContext.sampleRate}Hz`);
-      
-      // Add to playback queue
-      playbackQueueRef.current.push(float32Data);
-
-      // Start playback if not already playing
-      if (!isPlayingRef.current) {
-        isPlayingRef.current = true;
-        playNextChunk(audioContext);
-      }
-    } catch (error) {
-      console.error("Error playing audio:", error);
-    }
-  }, [getAudioContext]);
-
   // Play next chunk from queue
   const playNextChunk = useCallback((audioContext: AudioContext) => {
     if (playbackQueueRef.current.length === 0) {
@@ -237,6 +216,27 @@ export function useAudioStream(): UseAudioStreamReturn {
     source.start();
   }, []);
 
+  // Play audio
+  const playAudio = useCallback((base64Audio: string) => {
+    try {
+      const audioContext = getAudioContext();
+      const float32Data = base64PCM16ToFloat32(base64Audio);
+      
+      console.log(`[Playback] Queueing audio chunk: ${float32Data.length} samples at ${audioContext.sampleRate}Hz`);
+      
+      // Add to playback queue
+      playbackQueueRef.current.push(float32Data);
+
+      // Start playback if not already playing
+      if (!isPlayingRef.current) {
+        isPlayingRef.current = true;
+        playNextChunk(audioContext);
+      }
+    } catch (error) {
+      console.error("Error playing audio:", error);
+    }
+  }, [getAudioContext, playNextChunk]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -257,4 +257,3 @@ export function useAudioStream(): UseAudioStreamReturn {
     sampleRate,
   };
 }
-
