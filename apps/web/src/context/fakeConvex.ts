@@ -9,7 +9,7 @@ export interface MeetingContext {
 }
 
 export async function fetchMeetingContext(meetingId: string): Promise<MeetingContext> {
-  // TODO: replace with Convex call
+  // TODO: replace with Convex call; currently returns deterministic stub
   return {
     speakerAliases: { me: "Me", them: "Them" },
     notes: ["Decisions: Proceed with POC", "Actions: Send follow-up deck"],
