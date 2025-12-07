@@ -1,9 +1,12 @@
 import React from "react";
 import { WebRTCDemo } from "../webrtc";
+import { useAudioSessionState } from "./state";
 
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 
 export function MeetingApp() {
+  const audioSession = useAudioSessionState();
+
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: "100vh" }}>
       <div style={{ padding: "1rem", background: "#0f172a", color: "#e2e8f0" }}>
