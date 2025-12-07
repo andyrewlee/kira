@@ -11,6 +11,12 @@ const API_BASE_URL =
   (typeof window !== "undefined" ? window.location.origin.replace("5173", "4000") : "http://localhost:4000");
 const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "dev-token";
 
+const emitWebRTCError = (msg: string) => {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("webrtc:error", { detail: msg }));
+  }
+};
+
 type SessionResponse =
   | {
       sessionId: string;
@@ -274,6 +280,7 @@ export function useWebRTC(
       });
 
       if (!response.ok) {
+        emitWebRTCError(`Failed to create session: ${response.statusText}`);
         throw new Error(`Failed to create session: ${response.statusText}`);
       }
 
@@ -310,6 +317,7 @@ export function useWebRTC(
         const timer = setTimeout(() => {
           console.error(`[${getTimestamp()}] ⏱️ WebRTC connect timeout after ${timeoutMs}ms`);
           ws.close();
+          emitWebRTCError("WebRTC connect timeout");
           reject(new Error("WebRTC connect timeout"));
         }, timeoutMs);
 
@@ -365,6 +373,7 @@ export function useWebRTC(
         ws.onerror = (error) => {
           console.error("❌ Signaling WebSocket error:", error);
           clearTimeout(timer);
+          emitWebRTCError("Signaling WebSocket error");
           reject(error as any);
         };
 
@@ -375,6 +384,7 @@ export function useWebRTC(
       });
     } catch (error) {
       console.error("❌ Failed to connect:", error);
+      emitWebRTCError("WebRTC connect failed");
       throw error;
     }
   }, [setupPeerConnection, setupDataChannel]);

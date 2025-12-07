@@ -25,6 +25,20 @@ function MeetingAppInner() {
     if (typeof window !== "undefined" && !window.localStorage.getItem("authToken")) {
       window.localStorage.setItem("authToken", DEV_TOKEN);
     }
+
+    const onWebRTCError = (e: Event) => {
+      const detail = (e as CustomEvent).detail as string;
+      addToast(detail || "WebRTC error", "error");
+      audioSession.send({ type: "CANCEL" });
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("webrtc:error", onWebRTCError as any);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("webrtc:error", onWebRTCError as any);
+      }
+    };
   }, []);
 
   const handleSeed = async () => {
