@@ -3,7 +3,7 @@ import { WebRTCDemo } from "../webrtc";
 import { useAudioSessionState } from "./state";
 import { BaselinePanel } from "./components/BaselinePanel";
 import { ToastProvider, useToast } from "./toast/ToastContext";
-import { briefMe, resetMeeting, seedDemo } from "./api";
+import { briefMe, resetMeeting, seedDemo, chat } from "./api";
 import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeConvex";
 import { fetchMeetingContext as fetchMeetingContextConvex } from "../context/convexClient";
 import { MeetingContextPayload, renderContextText } from "@shared";
@@ -80,6 +80,16 @@ function MeetingAppInner() {
     }
   };
 
+  const handleChat = async () => {
+    try {
+      const reply = await chat(meetingId, "What did we decide?");
+      addToast(`Chat: ${reply.slice(0, 80)}...`, "info");
+    } catch (err) {
+      console.error(err);
+      addToast("Chat failed", "error");
+    }
+  };
+
   const loadContext = React.useCallback(async () => {
     try {
       const ctx = USE_FAKE_CONTEXT
@@ -113,6 +123,7 @@ function MeetingAppInner() {
           onReset={handleReset}
           onBrief={handleBrief}
           onAddTurn={handleAddTurn}
+          onChat={handleChat}
           transcript={(context?.turns || []).map((t) => `${context?.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)}
           notes={context?.notes || []}
           summary={context?.summary || ""}

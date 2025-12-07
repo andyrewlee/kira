@@ -27,6 +27,21 @@ export async function resetMeeting(meetingId: string): Promise<void> {
   }).then(assertOk);
 }
 
+export async function chat(meetingId: string, message: string): Promise<string> {
+  if (USE_FAKE_CONTEXT) return "Stub chat (fake context).";
+  const res = await fetch(`${API_BASE_URL}/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({ meetingId, message }),
+  });
+  if (!res.ok) throw new Error(`Chat failed ${res.status}`);
+  const data = await res.json();
+  return data.reply || "";
+}
+
 export async function briefMe(text: string, voice: string = "una", speed: number = 1.0): Promise<Blob> {
   const res = await fetch(`${API_BASE_URL}/tts`, {
     method: "POST",

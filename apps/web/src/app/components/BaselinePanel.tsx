@@ -5,12 +5,13 @@ interface Props {
   onReset?: () => void;
   onBrief?: () => void;
   onAddTurn?: () => void;
+  onChat?: () => void;
   transcript?: string[];
   notes?: string[];
   summary?: string;
 }
 
-export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAddTurn, transcript = [], notes = [], summary = "" }) => {
+export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAddTurn, onChat, transcript = [], notes = [], summary = "" }) => {
   return (
     <div style={{ padding: "1rem", background: "#0f172a", color: "#e2e8f0", minHeight: "100vh" }}>
       <h1 style={{ margin: 0, fontSize: "20px" }}>Kira Meeting</h1>
@@ -21,6 +22,7 @@ export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAdd
         <button onClick={onReset} style={buttonStyle}>Reset</button>
         <button onClick={onBrief} style={primaryButtonStyle}>Brief Me</button>
         <button onClick={onAddTurn} style={buttonStyle}>Add demo turn</button>
+        <button onClick={onChat} style={buttonStyle}>Ask: what did we decide?</button>
       </div>
 
       <div style={cardStyle}>
