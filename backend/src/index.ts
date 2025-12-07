@@ -27,8 +27,57 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", ts: new Date().toISOString() });
 });
 
-// Phase 4 baseline endpoint shapes (stubbed)
-app.post("/stt", requireAuth, (_req, res) => res.status(501).json({ error: "STT not implemented" }));
+// Phase 4 baseline endpoint shapes
+app.post("/stt", requireAuth, async (req, res) => {
+  try {
+    const XAI_API_KEY = process.env.XAI_API_KEY;
+    if (!XAI_API_KEY) return res.status(500).json({ error: "Missing XAI_API_KEY" });
+    const audio = req.body?.audio;
+    const format = req.body?.format || "mp3";
+    if (!audio) return res.status(400).json({ error: "Missing audio base64" });
+
+    const binary = Buffer.from(audio, "base64");
+    const form = new FormData();
+    form.append("file", new Blob([binary]), `audio.${format}`);
+    form.append("model", "grok-1" /* placeholder model name */);
+
+    const sttRes = await fetch("https://api.x.ai/v1/audio/transcriptions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${XAI_API_KEY}`,
+      },
+      body: form,
+    });
+    if (!sttRes.ok) {
+      const txt = await sttRes.text();
+      console.error("STT upstream error", txt);
+      return res.status(502).json({ error: "STT upstream failed", details: txt });
+    }
+    const data = await sttRes.json();
+    const text = data.text || "";
+
+    // Optional ingest into Convex/store
+    const meetingId = req.body?.meetingId;
+    const speakerKey = req.body?.speakerKey || "me";
+    const ts = Date.now();
+    if (meetingId) {
+      try {
+        if (convexClient) {
+          await convexAppendTurn({ meetingId, channel: "mic", speakerKey, text, ts, source: "human" });
+        } else {
+          store.appendTurn({ meetingId, channel: "mic", speakerKey, text, ts, source: "human" });
+        }
+      } catch (err) {
+        console.error("STT ingest failed", err);
+      }
+    }
+
+    res.json({ text, meetingId });
+  } catch (err) {
+    console.error("STT failed", err);
+    res.status(500).json({ error: "STT failed" });
+  }
+});
 app.post("/tts", requireAuth, async (req, res) => {
   try {
   const XAI_API_KEY = process.env.XAI_API_KEY;
