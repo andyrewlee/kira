@@ -1,13 +1,29 @@
 // Placeholder Convex client wiring. Replace with real Convex-generated client.
 import { MeetingContextPayload } from "@shared/context";
-import { getMeetingContext } from "../../convex/_generated/api"; // adjust path when convex client is generated
-import { ConvexHttpClient } from "convex/browser";
+// adjust the import path once convex codegen is added
+// import { getMeetingContext } from "../../convex/_generated/api";
+// import { ConvexHttpClient } from "convex/browser";
 
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL;
-const client = CONVEX_URL ? new ConvexHttpClient(CONVEX_URL) : null;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "dev-token";
+
+// Lazy client (will stay null until convex codegen exists)
+let convexClient: any = null;
 
 export async function fetchMeetingContext(meetingId: string, tail: number = 60): Promise<MeetingContextPayload> {
-  if (!client) throw new Error("CONVEX_URL not set");
-  const result = await client.query(getMeetingContext, { meetingId, tail });
-  return result as MeetingContextPayload;
+  if (CONVEX_URL && convexClient && convexClient.query) {
+    // TODO: enable once convex codegen is present
+    // const result = await convexClient.query(getMeetingContext, { meetingId, tail });
+    // return result as MeetingContextPayload;
+  }
+
+  // Fallback: hit backend in-memory endpoint
+  const res = await fetch(`${API_BASE_URL}/meetings/${meetingId}/context?tail=${tail}`, {
+    headers: {
+      Authorization: `Bearer ${AUTH_BEARER}`,
+    },
+  });
+  if (!res.ok) throw new Error(`Context fetch failed: ${res.status}`);
+  return (await res.json()) as MeetingContextPayload;
 }
