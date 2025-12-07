@@ -173,6 +173,10 @@ This avoids putting the Clerk token in the WS URL.
 - Log per request: `meetingId`, `latency_ms`, ok/fail
 - Keep last 50 events in memory: `/debug/events`
 
+### 4.5 Tests (pending)
+- Integration tests for API happy path (seed → ingest → notes refresh → chat) with Convex + Clerk token.
+- Unit tests for Convex fallback paths (if Convex unreachable, in-memory used).
+
 ---
 
 ## Phase 5 — Web UI (+ WebRTC agent panel integration)
