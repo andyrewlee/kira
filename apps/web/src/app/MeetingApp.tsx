@@ -30,24 +30,15 @@ function MeetingAppInner() {
   };
   const handleBrief = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/tts`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization:
-            typeof window !== "undefined" && window.localStorage.getItem("authToken")
-              ? `Bearer ${window.localStorage.getItem("authToken")}`
-              : `Bearer ${import.meta.env.VITE_DEMO_BEARER || "dev-token"}`,
-        },
-        body: JSON.stringify({ text: context?.summary || "Here is your briefing.", voice: "una", speed: 1.0 }),
-      });
-      if (!res.ok) throw new Error("TTS failed");
-      const blob = await res.blob();
+      audioSession.send({ type: "PLAY_BRIEFING" });
+      const blob = await briefMe(context?.summary || "Here is your briefing.", "una", 1.0);
       await playMp3Blob(blob);
+      audioSession.send({ type: "STOP_PLAYBACK" });
       addToast("Playing briefing", "success");
     } catch (err) {
       console.error(err);
       addToast("Briefing failed", "error");
+      audioSession.send({ type: "CANCEL" });
     }
   };
 

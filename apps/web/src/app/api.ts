@@ -27,18 +27,17 @@ export async function resetMeeting(meetingId: string): Promise<void> {
   }).then(assertOk);
 }
 
-export async function briefMe(): Promise<void> {
+export async function briefMe(text: string, voice: string = "una", speed: number = 1.0): Promise<Blob> {
   const res = await fetch(`${API_BASE_URL}/tts`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeader(),
     },
-    body: JSON.stringify({ text: "Here is your briefing.", voice: "una" }),
+    body: JSON.stringify({ text, voice, speed }),
   });
-  if (!res.ok) throw new Error("TTS failed");
-  // Caller will read blob
-  return;
+  if (!res.ok) throw new Error(`TTS failed (${res.status})`);
+  return await res.blob();
 }
 
 export function getAuthHeader() {
