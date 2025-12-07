@@ -25,6 +25,11 @@ This plan keeps the **Granola parity** rules **and** adds a **WebRTC voice agent
 ---
 
 ## Phase 0 — Decisions + flags + repo skeleton (do first)
+Checklist
+- [x] Flags captured in `.env.example` (BRIEFING_MODE, VOICE_INTERRUPT_MODE, USE_WEBRTC_DESKTOP, debounce, TURN/STUN)
+- [x] Repo layout set (backend/convex/apps/packages/tests)
+- [x] Config flags toggleable without code edits
+- [x] Tooling guardrails (husky pre-commit: lint → typecheck → test → lint-staged)
 ### 0.1 Transport and kill-switches (write these on the wall)
 - Default briefing: `BRIEFING_MODE=tts`
 - Default voice interrupt: `VOICE_INTERRUPT_MODE=tap`
@@ -73,6 +78,10 @@ This plan keeps the **Granola parity** rules **and** adds a **WebRTC voice agent
 
 ## Phase 1 — Shared types + audio session state machine (+ tests)
 **Goal:** no regressions when wiring WebRTC vs TTS vs Expo.
+Checklist
+- [x] Shared speaker/channel types
+- [x] Audio session state machine implemented
+- [x] Unit tests for key transitions
 
 ### 1.1 Shared granola-style types
 - `channel: "mic" | "system"`
@@ -99,6 +108,11 @@ This saves you later when Electron differs from Expo:
 
 **Status:** ✅ Schema + mutations/queries implemented (`convex/src`), including seed/reset and `getMeetingContext`.
 **Current:** backend endpoints now call Convex first (seed/reset/context/ingest/notes/chat) with in-memory fallback.
+Checklist
+- [x] Schema tables + indexes defined
+- [x] seed/reset/create/append/rename/setNotes Convex functions
+- [x] Backend routes call Convex with in-memory fallback
+- [x] Convex client wired in backend/web
 
 ### 2.1 Schema
 **meetings**
@@ -126,6 +140,12 @@ This saves you later when Electron differs from Expo:
 
 **Status:** ✅ Auth middleware validates Clerk JWT via `CLERK_JWT_PUBLIC_KEY` **or** `CLERK_JWKS_URL`; dev bearer allowed only when `DEV_MODE=1`. Web + WebRTC now pull a Clerk session token before hitting the backend; `.env.example` defaults to real-token mode (no silent dev bypass).
 **Current fallback:** dev bearer stored in `localStorage` only when `DEV_MODE=1`; backend bypass gated by `DEV_MODE`.
+Checklist
+- [x] Backend JWT validation (public key or JWKS) + dev bypass guard
+- [x] CORS allowlist
+- [x] Web/WebRTC fetch Clerk token first
+- [ ] Convex client auth via Clerk token (no dev bearer)
+- [ ] WS token validation enforced end-to-end
 
 - Clerk JWT template `convex` + Convex auth config
 - Backend: require Clerk bearer on **every** HTTP endpoint (`/stt`, `/tts`, `/chat`, `/ingest`, `/webrtc/*`, calendar)
@@ -143,6 +163,13 @@ This avoids putting the Clerk token in the WS URL.
 
 ## Phase 4 — Backend orchestration (LLM notes/chat + STT/TTS proxy + debounce)
 **Goal:** stable meeting intelligence without calling LLM every turn.
+Checklist
+- [x] Core endpoints wired (/stt, /tts, /chat, /notes/refresh, /ingest, /context)
+- [x] Grok-backed notes/chat with Convex-first fallback store
+- [ ] Debounce thresholds applied (DEBOUNCE_MS/DEBOUNCE_TURNS)
+- [ ] Rate limits + debug event buffer
+- [ ] Audio retention policy enforcement
+- [ ] Integration + fallback tests
 
 ### 4.1 Endpoints (baseline)
 - `POST /meetings/:id/ingest` `{ channel, speakerKey, text, ts }`
@@ -182,6 +209,12 @@ This avoids putting the Clerk token in the WS URL.
 
 ## Phase 5 — Web UI (+ WebRTC agent panel integration)
 **Goal:** end-to-end demo without mic, then wire in the WebRTC voice panel once baseline UI is stable.
+Checklist
+- [x] Baseline meeting UI (transcript, notes, summary, seed/reset/brief/chat/refresh/STT)
+- [x] WebRTC panel vendored & gated by USE_WEBRTC_DESKTOP; context push wired
+- [ ] Replace dev bearer with Clerk token everywhere in UI
+- [ ] WebRTC fallback behaviors (timeout/fail → toast + TTS)
+- [ ] Smoke path seed → brief → interrupt → ask → answer → resume (web/Electron)
 
 **Status:** WebRTC panel vendored, gated by `USE_WEBRTC_DESKTOP`, pushes meeting context via Convex client (fake fallback flag), basic fallback alert. Needs main meeting UI integration + toasts/state-machine hooks.
 **Current fallback:** baseline panel uses in-memory backend if Convex fails; auto-seeds demo meeting on missing context. Next: document smoke checklist; disable dev bearer in prod env.
@@ -289,6 +322,9 @@ Surface:
 
 ## Phase 6 — Electron wrapper (no duplicated UI)
 **Goal:** avoid “white screen” at the end.
+Checklist
+- [ ] Load web dev server in dev
+- [ ] Load file:// build in prod; test once
 
 - Dev: load web dev server URL
 - Prod: load `file://.../dist/index.html` (test once early)
@@ -298,6 +334,10 @@ Surface:
 
 ## Phase 7 — Desktop meeting capture: dual-channel Me/Them (Granola parity)
 **Goal:** match Granola: no diarization, just 2 channels.
+Checklist
+- [ ] Mic + system capture flows
+- [ ] Permission UX + CAPTURE_SYSTEM_AUDIO flag
+- [ ] Fallback to mic-only when system audio missing
 
 ### 8.1 Capture strategy (hackathon feasible)
 - Mic: `getUserMedia({audio:true})` → chunks → `/stt` → ingest `channel:"mic", speakerKey:"me"`
@@ -318,6 +358,10 @@ Detect when `getDisplayMedia` returns no audio track:
 ---
 
 ## Phase 8 — Mobile (Expo): mic-only + Speaker A/B (Granola mobile parity)
+Checklist
+- [ ] Mic chunks → /stt → ingest with speaker toggle
+- [ ] Brief Me TTS + tap interrupt
+- [ ] Optional diarization flag
 - Mic chunks → `/stt` → `/ingest` with `channel:"mic"`, `speakerKey:"A"|"B"|...`
 - Manual speaker toggle
 - Brief Me: `/tts` playback + tap interrupt
@@ -326,6 +370,10 @@ Detect when `getDisplayMedia` returns no audio track:
 ---
 
 ## Phase 9 — Calendar + Recipes + cross‑meeting chat (only after core is stable)
+Checklist
+- [ ] Calendar read (today) with optional writeback flag
+- [ ] Templates/recipes per meeting
+- [ ] Cross-meeting chat scoped to today
 - Calendar read: today’s events
 - Optional writeback if `ALLOW_WRITEBACK=1`
 - Recipes/templates in Convex; selected per meeting
