@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Message } from "../types/messages";
+import { getAuthToken } from "../../app/api";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -268,15 +269,17 @@ export function useWebRTC(
 
       // 1. Create session with sample rate
       console.log(`[${getTimestamp()}] 📝 Creating WebRTC session with sample rate: ${sampleRate}Hz`);
+      const bearer = await getAuthToken();
+      if (!bearer) {
+        emitWebRTCError("Missing auth token");
+        throw new Error("Missing auth token");
+      }
+
       const response = await fetch(`${API_BASE_URL}/webrtc/sessions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${
-            typeof window !== "undefined" && window.localStorage.getItem("authToken")
-              ? window.localStorage.getItem("authToken")
-              : AUTH_BEARER
-          }`,
+          Authorization: `Bearer ${bearer}`,
         },
         body: JSON.stringify({
           sample_rate: sampleRate,
@@ -419,17 +422,22 @@ export function useWebRTC(
 
     // Delete session
     if (sessionIdRef.current) {
-      fetch(`${API_BASE_URL}/webrtc/sessions/${sessionIdRef.current}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${
-            typeof window !== "undefined" && window.localStorage.getItem("authToken")
-              ? window.localStorage.getItem("authToken")
-              : AUTH_BEARER
-          }`,
-        },
-      }).catch(console.error);
+      const sid = sessionIdRef.current;
       sessionIdRef.current = null;
+      getAuthToken()
+        .then((bearer) =>
+          fetch(`${API_BASE_URL}/webrtc/sessions/${sid}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${bearer || AUTH_BEARER}` },
+          })
+        )
+        .catch(() =>
+          fetch(`${API_BASE_URL}/webrtc/sessions/${sid}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${AUTH_BEARER}` },
+          })
+        )
+        .catch(console.error);
     }
 
     setIsConnected(false);

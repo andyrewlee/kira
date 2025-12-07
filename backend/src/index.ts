@@ -13,7 +13,7 @@ import {
   convexAppendTurn,
   convexSetNotes,
 } from "./convexClient";
-import fetch from "node-fetch";
+import fetch, { Blob, FormData } from "node-fetch";
 
 const { app } = ExpressWs(express() as any);
 
@@ -53,7 +53,7 @@ app.post("/stt", requireAuth, async (req, res) => {
       console.error("STT upstream error", txt);
       return res.status(502).json({ error: "STT upstream failed", details: txt });
     }
-    const data = await sttRes.json();
+    const data: any = await sttRes.json();
     const text = data.text || "";
 
     // Optional ingest into Convex/store
@@ -143,7 +143,7 @@ app.post("/chat", requireAuth, async (req, res) => {
       console.error("Grok chat error", txt);
       return res.status(502).json({ error: "Grok chat failed", details: txt });
     }
-    const data = await xaiRes.json();
+    const data: any = await xaiRes.json();
     const reply = data.choices?.[0]?.message?.content || "";
     res.json({ reply });
   } catch (err) {
@@ -178,7 +178,7 @@ app.post("/notes/refresh", requireAuth, async (req, res) => {
       body: JSON.stringify({
         model: "grok-beta",
         messages: [
-          { role: "system", content: "Return JSON: {notes: [""], summary: ""}" },
+          { role: "system", content: 'Return JSON: {"notes":[""],"summary":""}' },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
@@ -189,7 +189,7 @@ app.post("/notes/refresh", requireAuth, async (req, res) => {
       console.error("Grok notes error", txt);
       return res.status(502).json({ error: "Grok notes failed", details: txt });
     }
-    const data = await xaiRes.json();
+    const data: any = await xaiRes.json();
     const content = data.choices?.[0]?.message?.content || "{}";
     let parsed = { notes: ctx.notes, summary: ctx.summary } as any;
     try {

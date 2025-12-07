@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify, JWTPayload } from "jose";
 import { URL } from "url";
 
 // Minimal auth: verify RS256 JWT when public key is provided; otherwise allow dev.
@@ -18,7 +18,7 @@ if (CLERK_JWKS_URL) {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers["authorization"];
   if (!header || typeof header !== "string" || !header.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -40,7 +40,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
       (req as any).auth = decoded;
     } else if (jwks) {
       const { payload } = await jwtVerify(token, jwks, {});
-      (req as any).auth = payload;
+      (req as any).auth = payload as JWTPayload;
     }
     return next();
   } catch (err) {

@@ -1,5 +1,5 @@
 import { ConvexHttpClient } from "convex/browser";
-import { appendTurn, seedDemoMeeting, resetMeeting, getMeetingContext, setNotesAndSummary } from "../convex/_generated/api";
+import { api } from "../../convex/_generated/api";
 
 const CONVEX_URL = process.env.CONVEX_URL;
 
@@ -11,12 +11,12 @@ export const convexClient = CONVEX_URL ? new ConvexHttpClient(CONVEX_URL) : null
 
 export async function convexSeedDemo(userId: string) {
   if (!convexClient) throw new Error("Convex client not configured");
-  return convexClient.mutation(seedDemoMeeting, { userId });
+  return convexClient.mutation(api.src.functions.meetings.seedDemoMeeting, { userId });
 }
 
 export async function convexResetMeeting(meetingId: any) {
   if (!convexClient) throw new Error("Convex client not configured");
-  return convexClient.mutation(resetMeeting, { meetingId });
+  return convexClient.mutation(api.src.functions.meetings.resetMeeting, { meetingId });
 }
 
 export async function convexAppendTurn(args: {
@@ -28,15 +28,15 @@ export async function convexAppendTurn(args: {
   source: "human" | "system" | "llm";
 }) {
   if (!convexClient) throw new Error("Convex client not configured");
-  return convexClient.mutation(appendTurn, args);
+  return convexClient.mutation(api.src.functions.meetings.appendTurn, args);
 }
 
 export async function convexGetContext(meetingId: any, tail: number) {
   if (!convexClient) throw new Error("Convex client not configured");
-  return convexClient.query(getMeetingContext, { meetingId, tail });
+  return convexClient.query(api.src.functions.meetings.getMeetingContext, { meetingId, tail });
 }
 
 export async function convexSetNotes(meetingId: any, notes: string[], summary: string) {
   if (!convexClient) throw new Error("Convex client not configured");
-  return convexClient.mutation(setNotesAndSummary, { meetingId, notes, summary });
+  return convexClient.mutation(api.src.functions.meetings.setNotesAndSummary, { meetingId, notes, summary });
 }

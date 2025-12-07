@@ -8,29 +8,44 @@
  * @module
  */
 
+import type * as dist_functions_meetings from "../dist/functions/meetings.js";
+import type * as src_functions_meetings from "../src/functions/meetings.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as src_functions_meetings from "../src/functions/meetings.js";
+
+declare const fullApi: ApiFromModules<{
+  "dist/functions/meetings": typeof dist_functions_meetings;
+  "src/functions/meetings": typeof src_functions_meetings;
+}>;
 
 /**
- * A utility for referencing Convex functions in your app's API.
+ * A utility for referencing Convex functions in your app's public API.
  *
  * Usage:
  * ```js
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-declare const fullApi: ApiFromModules<{
-  "src/functions/meetings": typeof src_functions_meetings;
-}>;
 export declare const api: FilterApi<
   typeof fullApi,
   FunctionReference<any, "public">
 >;
+
+/**
+ * A utility for referencing Convex functions in your app's internal API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = internal.myModule.myFunction;
+ * ```
+ */
 export declare const internal: FilterApi<
   typeof fullApi,
   FunctionReference<any, "internal">
 >;
+
+export declare const components: {};

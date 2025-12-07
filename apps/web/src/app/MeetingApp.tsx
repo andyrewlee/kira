@@ -3,7 +3,7 @@ import { WebRTCDemo } from "../webrtc";
 import { useAudioSessionState } from "./state";
 import { BaselinePanel } from "./components/BaselinePanel";
 import { ToastProvider, useToast } from "./toast/ToastContext";
-import { briefMe, resetMeeting, seedDemo, chat, refreshNotes } from "./api";
+import { briefMe, resetMeeting, seedDemo, chat, refreshNotes, buildAuthHeaders } from "./api";
 import { sttBase64 } from "./api";
 import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeConvex";
 import {
@@ -19,6 +19,7 @@ import { blobToBase64 } from "./utils";
 
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
+const DEV_MODE = import.meta.env.VITE_DEV_MODE === "1";
 const DEV_TOKEN = import.meta.env.VITE_DEMO_BEARER || "dev-token";
 
 function MeetingAppInner() {
@@ -33,7 +34,8 @@ function MeetingAppInner() {
 
   // Ensure a token exists in dev to satisfy backend auth
   React.useEffect(() => {
-    if (typeof window !== "undefined" && !window.localStorage.getItem("authToken")) {
+    // Dev convenience only: set a bearer token if none exists and dev mode is on.
+    if (DEV_MODE && typeof window !== "undefined" && !window.localStorage.getItem("authToken")) {
       window.localStorage.setItem("authToken", DEV_TOKEN);
     }
 
@@ -96,9 +98,10 @@ function MeetingAppInner() {
     try {
       const text = "New demo turn at " + new Date().toLocaleTimeString();
       if (USE_FAKE_CONTEXT) {
+        const headers = await buildAuthHeaders();
         await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/meetings/${meetingId}/ingest`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", ...getAuthHeader() },
+          headers,
           body: JSON.stringify({ channel: "mic", speakerKey: "me", text, ts: Date.now(), source: "human" }),
         });
       } else {

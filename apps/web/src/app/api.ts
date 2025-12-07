@@ -71,7 +71,7 @@ export async function sttBase64(audioBase64: string, format: string = "mp3", mee
   return (await res.json()) as { text: string; meetingId?: string };
 }
 
-async function getAuthToken(): Promise<string> {
+export async function getAuthToken(): Promise<string> {
   if (typeof window !== "undefined") {
     // Prefer Clerk if available
     const clerk: any = (window as any).Clerk;
@@ -80,7 +80,7 @@ async function getAuthToken(): Promise<string> {
         const t = await clerk.session.getToken();
         if (t) return t;
       } catch {
-        // fall through
+        // fall through to dev token/local storage
       }
     }
     const stored = window.localStorage.getItem("authToken");
@@ -89,13 +89,21 @@ async function getAuthToken(): Promise<string> {
   return DEV_MODE ? AUTH_BEARER : "";
 }
 
-async function buildAuthHeaders() {
+export async function buildAuthHeaders() {
   const token = await getAuthToken();
   if (!token) throw new Error("No auth token available");
   return {
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
   } as Record<string, string>;
+}
+
+// Synchronous helper for quick calls that only need a dev/local token fallback.
+export function getAuthHeaderSync() {
+  const token =
+    (typeof window !== "undefined" && window.localStorage.getItem("authToken")) || (DEV_MODE ? AUTH_BEARER : "");
+  if (!token) throw new Error("No auth token available");
+  return { Authorization: `Bearer ${token}` } as Record<string, string>;
 }
 
 function assertOk(res: Response) {

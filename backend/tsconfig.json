@@ -2,7 +2,14 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": ["node"],
+    "baseUrl": "./",
+    "paths": {
+      "../../convex/_generated/api": ["src/types/convexApiStub"],
+      "../../convex/_generated/api.js": ["src/types/convexApiStub"],
+      "../../convex/_generated/api.d.ts": ["src/types/convexApiStub"]
+    }
   },
   "include": ["src"]
 }

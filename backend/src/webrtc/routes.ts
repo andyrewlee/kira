@@ -75,8 +75,21 @@ export function registerWebrtcRoutes({ app, requireAuth }: RegisterWebrtcOptions
     res.json({ sessionId, stats });
   });
 
+  // Delete session
+  app.delete("/webrtc/sessions/:sessionId", requireAuth, (req, res) => {
+    const { sessionId } = req.params;
+    const peer = peerConnections.get(sessionId);
+    if (peer) {
+      peer.close();
+      peerConnections.delete(sessionId);
+    }
+    const deleted = sessionManager.deleteSession(sessionId);
+    if (!deleted) return res.status(404).json({ error: "Session not found" });
+    res.json({ ok: true });
+  });
+
   // Signaling WS
-  app.ws("/webrtc/signaling/:sessionId", async (ws: WebSocket, req) => {
+  app.ws("/webrtc/signaling/:sessionId", async (ws: WebSocket, req: any) => {
     const sessionId = req.params.sessionId;
     const token = (req.query?.token as string | undefined) || undefined;
 

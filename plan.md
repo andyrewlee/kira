@@ -123,7 +123,7 @@ This saves you later when Electron differs from Expo:
 ## Phase 3 — Auth + CORS + “no unauth path”
 **Goal:** don’t leak xAI keys; don’t get surprised by 401s on stage.
 
-**Status:** 🔸 Auth stub verifies JWT with `CLERK_JWT_PUBLIC_KEY` if set; CORS allowlist wired. Needs real Clerk validation + frontend bearer propagation.
+**Status:** ✅ Auth middleware validates Clerk JWT via `CLERK_JWT_PUBLIC_KEY` **or** `CLERK_JWKS_URL`; dev bearer allowed only when `DEV_MODE=1`. Web + WebRTC now pull a Clerk session token before hitting the backend; `.env.example` defaults to real-token mode (no silent dev bypass).
 **Current fallback:** dev bearer stored in `localStorage` only when `DEV_MODE=1`; backend bypass gated by `DEV_MODE`.
 
 - Clerk JWT template `convex` + Convex auth config
@@ -200,11 +200,11 @@ This avoids putting the Clerk token in the WS URL.
 - Debug: collapsible last-50-events panel
 
 ### 5.2 WebRTC Voice Agent (web/Electron) — xAI example integration
-- [ ] Vendor `xai-voice-examples-main/examples/agent/webrtc/server` → `backend/webrtc` and prefix routes to `/webrtc/*`.
-- [ ] Add auth + wsToken: `POST /webrtc/sessions` issues `{sessionId, wsUrl, wsToken}`; `WS /webrtc/signaling/:sessionId?token=...` validates token.
+- [x] Vendor `xai-voice-examples-main/examples/agent/webrtc/server` → `backend/webrtc` and prefix routes to `/webrtc/*`.
+- [x] Add auth + wsToken: `POST /webrtc/sessions` issues `{sessionId, wsUrl, wsToken}`; `WS /webrtc/signaling/:sessionId?token=...` validates token. Added `DELETE /webrtc/sessions/:id` cleanup.
 - [ ] Expose flags via env: `USE_WEBRTC_DESKTOP`, `BRIEFING_MODE`, `VOICE_INTERRUPT_MODE`, `WEBRTC_CONNECT_TIMEOUT_MS`, `ICE_SERVERS` JSON, `ENABLE_TURN`, `VOICE`, `INSTRUCTIONS`, `ALLOWED_ORIGINS`.
-- [ ] Port client hook/UI from `examples/agent/webrtc/client` into `apps/web` behind flag; reuse Control/Stats/Debug, styled to match Kira.
-- [ ] Inject meeting context over DataChannel on connect + debounced refresh (aliases, notes, summary, tail turns).
+- [x] Port client hook/UI from `examples/agent/webrtc/client` into `apps/web` behind flag; reuse Control/Stats/Debug, styled to match Kira.
+- [x] Inject meeting context over DataChannel on connect + debounced refresh (aliases, notes, summary, tail turns).
 - [ ] Implement fallbacks: connect timeout/failed/disconnected → stop agent audio, toast, switch to baseline TTS.
 - [ ] Smoke test: seed → brief → interrupt → ask → answer → resume (browser + Electron dev).
 

@@ -1,6 +1,6 @@
-import { mutation, query } from "convex/server";
+import { mutation, query } from "../../_generated/server";
 import { v } from "convex/values";
-import { Id } from "convex/_generated/dataModel";
+import { Id } from "../../_generated/dataModel";
 
 export const createMeeting = mutation({
   args: {
@@ -80,7 +80,11 @@ export const resetMeeting = mutation({
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.meetingId, { notes: [], summary: "" });
-    const turns = await ctx.db.query("turns").withIndex("by_meeting_ts", (q) => q.eq("meetingId", args.meetingId)).collect();
+    const db: any = ctx.db;
+    const turns = await db
+      .query("turns")
+      .withIndex("by_meeting_ts", (q: any) => q.eq("meetingId", args.meetingId))
+      .collect();
     for (const t of turns) {
       await ctx.db.delete(t._id);
     }
@@ -134,16 +138,17 @@ export const getMeetingContext = query({
     const meeting = await ctx.db.get(args.meetingId);
     if (!meeting) throw new Error("Meeting not found");
     const tail = args.tail ?? 60;
-    const turns = await ctx.db
+    const db: any = ctx.db;
+    const turns = await db
       .query("turns")
-      .withIndex("by_meeting_ts", (q) => q.eq("meetingId", args.meetingId))
+      .withIndex("by_meeting_ts", (q: any) => q.eq("meetingId", args.meetingId))
       .order("desc")
       .take(tail);
     return {
       speakerAliases: meeting.speakerAliases,
       summary: meeting.summary,
       notes: meeting.notes,
-      turns: turns.map((t) => ({ speakerKey: t.speakerKey, text: t.text })).reverse(),
+      turns: turns.map((t: any) => ({ speakerKey: t.speakerKey, text: t.text })).reverse(),
     };
   },
 });
