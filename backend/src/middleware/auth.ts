@@ -3,6 +3,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 
 // Minimal auth: verify RS256 JWT when public key is provided; otherwise allow dev.
 const CLERK_JWT_PUBLIC_KEY = process.env.CLERK_JWT_PUBLIC_KEY || "";
+const DEV_BEARER = process.env.DEV_BEARER || "dev-token";
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers["authorization"];
@@ -12,8 +13,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = header.slice("Bearer ".length);
 
   if (!CLERK_JWT_PUBLIC_KEY) {
-    (req as any).auth = { bypass: true, token };
-    return next();
+    // Allow dev bypass only if matches configured dev bearer
+    if (token === DEV_BEARER) {
+      (req as any).auth = { bypass: true, token };
+      return next();
+    }
+    return res.status(401).json({ error: "Unauthorized (dev bearer mismatch)" });
   }
 
   try {
