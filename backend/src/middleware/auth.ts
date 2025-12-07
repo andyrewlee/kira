@@ -7,6 +7,7 @@ import { URL } from "url";
 const CLERK_JWT_PUBLIC_KEY = process.env.CLERK_JWT_PUBLIC_KEY || "";
 const DEV_BEARER = process.env.DEV_BEARER || "dev-token";
 const CLERK_JWKS_URL = process.env.CLERK_JWKS_URL || "";
+const DEV_MODE = process.env.DEV_MODE === "1";
 
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 if (CLERK_JWKS_URL) {
@@ -25,12 +26,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = header.slice("Bearer ".length);
 
   if (!CLERK_JWT_PUBLIC_KEY && !jwks) {
-    // Allow dev bypass only if matches configured dev bearer
-    if (token === DEV_BEARER) {
+    // Allow dev bypass only if matches configured dev bearer AND dev mode is enabled
+    if (DEV_MODE && token === DEV_BEARER) {
       (req as any).auth = { bypass: true, token };
       return next();
     }
-    return res.status(401).json({ error: "Unauthorized (dev bearer mismatch)" });
+    return res.status(401).json({ error: "Unauthorized (missing Clerk keys)" });
   }
 
   try {
