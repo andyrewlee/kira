@@ -42,7 +42,8 @@ export async function briefMe(): Promise<void> {
 }
 
 export function getAuthHeader() {
-  return { Authorization: `Bearer ${AUTH_BEARER}` };
+  const token = typeof window !== "undefined" ? window.localStorage.getItem("authToken") : null;
+  return { Authorization: `Bearer ${token || AUTH_BEARER}` };
 }
 
 function assertOk(res: Response) {
