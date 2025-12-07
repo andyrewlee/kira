@@ -66,6 +66,15 @@ function MeetingAppInner() {
       setContext(ctx);
     } catch (err) {
       console.error(err);
+      // Auto-seed if missing when not in fake mode
+      const message = (err as Error)?.message || "";
+      if (!USE_FAKE_CONTEXT && message.includes("404")) {
+        await seedDemo();
+        const ctx = await fetchMeetingContextConvex(meetingId);
+        setContext(ctx);
+        addToast("Demo meeting seeded automatically", "info");
+        return;
+      }
       addToast("Failed to load meeting context", "error");
     }
   }, []);
