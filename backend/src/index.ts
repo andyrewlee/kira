@@ -1,5 +1,6 @@
 import "dotenv/config";
-import express from "express";
+import express, { Response } from "express";
+import type { Timeout } from "node:timers";
 import cors from "cors";
 import ExpressWs from "express-ws";
 import { requireAuth } from "./middleware/auth";
@@ -17,6 +18,44 @@ import fetch, { Blob, FormData } from "node-fetch";
 
 const { app } = ExpressWs(express() as any);
 
+// Config
+const DEBOUNCE_MS = Number(process.env.DEBOUNCE_MS || 3000);
+const DEBOUNCE_TURNS = Number(process.env.DEBOUNCE_TURNS || 3);
+const MAX_TURNS_CONTEXT = Number(process.env.MAX_TURNS_CONTEXT || 60);
+const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 60000);
+const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX || 30);
+
+// Simple rate limiter per token+endpoint
+const rateBuckets = new Map<string, number[]>();
+function checkRateLimit(token: string | undefined, key: string) {
+  if (!token) return false;
+  const now = Date.now();
+  const bucketKey = `${key}:${token}`;
+  const arr = (rateBuckets.get(bucketKey) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (arr.length >= RATE_LIMIT_MAX) return true;
+  arr.push(now);
+  rateBuckets.set(bucketKey, arr);
+  return false;
+}
+
+// Debug event buffer
+type DebugEvent = { ts: string; type: string; meetingId?: string; details?: any };
+const events: DebugEvent[] = [];
+function pushEvent(evt: DebugEvent) {
+  events.push(evt);
+  if (events.length > 50) events.shift();
+}
+
+// Debounce refresh tracking
+const refreshTrack = new Map<
+  string,
+  { count: number; timer: Timeout | null }
+>();
+
+async function refreshNotesInternal(meetingId: string) {
+  await handleNotesRefresh(meetingId, false);
+}
+
 // CORS
 const allowlist = (process.env.CORS_ALLOWLIST || "http://localhost:3000,http://localhost:5173,http://localhost:8080").split(",");
 app.use(cors({ origin: allowlist, credentials: true }));
@@ -29,6 +68,8 @@ app.get("/health", (_req, res) => {
 
 // Phase 4 baseline endpoint shapes
 app.post("/stt", requireAuth, async (req, res) => {
+  const token = (req.headers["authorization"] as string | undefined)?.slice("Bearer ".length);
+  if (checkRateLimit(token, "/stt")) return res.status(429).json({ error: "Rate limit" });
   try {
     const XAI_API_KEY = process.env.XAI_API_KEY;
     if (!XAI_API_KEY) return res.status(500).json({ error: "Missing XAI_API_KEY" });
@@ -72,6 +113,7 @@ app.post("/stt", requireAuth, async (req, res) => {
       }
     }
 
+    pushEvent({ ts: new Date().toISOString(), type: "stt", meetingId, details: { text } });
     res.json({ text, meetingId });
   } catch (err) {
     console.error("STT failed", err);
@@ -79,6 +121,8 @@ app.post("/stt", requireAuth, async (req, res) => {
   }
 });
 app.post("/tts", requireAuth, async (req, res) => {
+  const token = (req.headers["authorization"] as string | undefined)?.slice("Bearer ".length);
+  if (checkRateLimit(token, "/tts")) return res.status(429).json({ error: "Rate limit" });
   try {
   const XAI_API_KEY = process.env.XAI_API_KEY;
     if (!XAI_API_KEY) return res.status(500).json({ error: "Missing XAI_API_KEY" });
@@ -100,6 +144,7 @@ app.post("/tts", requireAuth, async (req, res) => {
     }
     const buf = Buffer.from(await ttsRes.arrayBuffer());
     res.setHeader("Content-Type", "audio/mpeg");
+    pushEvent({ ts: new Date().toISOString(), type: "tts", details: { bytes: buf.length } });
     res.send(buf);
   } catch (err) {
     console.error(err);
@@ -145,6 +190,7 @@ app.post("/chat", requireAuth, async (req, res) => {
     }
     const data: any = await xaiRes.json();
     const reply = data.choices?.[0]?.message?.content || "";
+    pushEvent({ ts: new Date().toISOString(), type: "chat", meetingId, details: { reply } });
     res.json({ reply });
   } catch (err) {
     console.error("Grok chat exception", err);
@@ -152,17 +198,18 @@ app.post("/chat", requireAuth, async (req, res) => {
   }
 });
 
-// Notes refresh: call Grok to produce notes/summary, write to Convex/store
-app.post("/notes/refresh", requireAuth, async (req, res) => {
-  const meetingId = req.body?.meetingId || "demo-meeting";
+async function handleNotesRefresh(meetingId: string, returnResponse: boolean = true, res?: express.Response) {
   let ctx: any = null;
   try {
-    if (convexClient) ctx = await convexGetContext(meetingId, 40);
+    if (convexClient) ctx = await convexGetContext(meetingId, MAX_TURNS_CONTEXT);
   } catch (err) {
     console.error("Convex notes context failed", err);
   }
-  if (!ctx) ctx = store.getContext(meetingId, 40);
-  if (!ctx) return res.status(404).json({ error: "Meeting not found" });
+  if (!ctx) ctx = store.getContext(meetingId, MAX_TURNS_CONTEXT);
+  if (!ctx) {
+    if (returnResponse && res) res.status(404).json({ error: "Meeting not found" });
+    return;
+  }
 
   const prompt = `Summarize this meeting. Provide concise notes (bullets) and a summary. Recent turns: ${ctx.turns
     .map((t: any) => `${ctx.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)
@@ -187,7 +234,8 @@ app.post("/notes/refresh", requireAuth, async (req, res) => {
     if (!xaiRes.ok) {
       const txt = await xaiRes.text();
       console.error("Grok notes error", txt);
-      return res.status(502).json({ error: "Grok notes failed", details: txt });
+      if (returnResponse && res) return res.status(502).json({ error: "Grok notes failed", details: txt });
+      return;
     }
     const data: any = await xaiRes.json();
     const content = data.choices?.[0]?.message?.content || "{}";
@@ -199,14 +247,21 @@ app.post("/notes/refresh", requireAuth, async (req, res) => {
     const summary = typeof parsed.summary === "string" ? parsed.summary : ctx.summary;
     if (convexClient) {
       await convexSetNotes(meetingId, notes, summary);
-      return res.json({ summary, notes });
+    } else {
+      store.setNotesAndSummary(meetingId, notes, summary);
     }
-    store.setNotesAndSummary(meetingId, notes, summary);
-    res.json({ summary, notes, fallback: true });
+    pushEvent({ ts: new Date().toISOString(), type: "notes:set", meetingId, details: { summary } });
+    if (returnResponse && res) res.json({ summary, notes, fallback: !convexClient });
   } catch (err) {
     console.error("Grok notes exception", err);
-    res.status(500).json({ error: "Notes refresh failed" });
+    if (returnResponse && res) res.status(500).json({ error: "Notes refresh failed" });
   }
+}
+
+// Notes refresh: call Grok to produce notes/summary, write to Convex/store
+app.post("/notes/refresh", requireAuth, async (req, res) => {
+  const meetingId = req.body?.meetingId || "demo-meeting";
+  await handleNotesRefresh(meetingId, true, res);
 });
 
 // Meeting handlers (Convex first, fallback to in-memory)
@@ -265,7 +320,29 @@ app.post("/meetings/:id/ingest", requireAuth, async (req, res) => {
     console.error("Convex ingest failed", err);
   }
   store.appendTurn({ meetingId, channel, speakerKey, text, ts, source });
+  // Debounce notes refresh
+  const entry = refreshTrack.get(meetingId) || { count: 0, timer: null };
+  entry.count += 1;
+  if (entry.count >= DEBOUNCE_TURNS) {
+    entry.count = 0;
+    if (entry.timer) clearTimeout(entry.timer);
+    refreshNotesInternal(meetingId);
+  } else {
+    if (entry.timer) clearTimeout(entry.timer);
+    entry.timer = setTimeout(() => {
+      refreshNotesInternal(meetingId);
+      const current = refreshTrack.get(meetingId);
+      if (current) current.count = 0;
+    }, DEBOUNCE_MS);
+  }
+  refreshTrack.set(meetingId, entry);
+
+  pushEvent({ ts: new Date().toISOString(), type: "ingest", meetingId, details: { channel, speakerKey } });
   res.json({ ok: true, fallback: true });
+});
+
+app.get("/debug/events", requireAuth, (_req, res) => {
+  res.json(events);
 });
 
 // Phase 5 WebRTC relay (xAI example integration)

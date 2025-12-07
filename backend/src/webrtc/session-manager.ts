@@ -5,8 +5,12 @@
 import type { Session } from "./types";
 import * as crypto from "crypto";
 
+interface StoredSession extends Session {
+  userId?: string;
+}
+
 export class SessionManager {
-  private sessions: Map<string, Session> = new Map();
+  private sessions: Map<string, StoredSession> = new Map();
 
   /**
    * Generate a cryptographically secure session ID
@@ -18,14 +22,15 @@ export class SessionManager {
   /**
    * Create a new session
    */
-  createSession(sampleRate: number = 24000, wsToken?: string): Session {
+  createSession(sampleRate: number = 24000, wsToken?: string, userId?: string): Session {
     const sessionId = this.generateSessionId();
-    const session: Session = {
+    const session: StoredSession = {
       id: sessionId,
       created_at: new Date().toISOString(),
       status: "created",
       sample_rate: sampleRate,
       wsToken,
+      userId,
     };
     this.sessions.set(sessionId, session);
     console.log(`[${sessionId}] 📝 Session created with sample rate ${sampleRate}Hz`);

@@ -52,7 +52,8 @@ export function registerWebrtcRoutes({ app, requireAuth }: RegisterWebrtcOptions
     const requestedRate = typeof req.body?.sample_rate === "number" ? req.body.sample_rate : undefined;
     const sampleRate = pickSampleRate(requestedRate);
     const wsToken = generateWsToken();
-    const session = sessionManager.createSession(sampleRate, wsToken);
+    const userId = (req as any).auth?.sub || (req as any).auth?.user_id;
+    const session = sessionManager.createSession(sampleRate, wsToken, userId);
 
     res.json({
       sessionId: session.id,

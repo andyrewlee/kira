@@ -144,8 +144,8 @@ Checklist
 - [x] Backend JWT validation (public key or JWKS) + dev bypass guard
 - [x] CORS allowlist
 - [x] Web/WebRTC fetch Clerk token first
-- [ ] Convex client auth via Clerk token (no dev bearer)
-- [ ] WS token validation enforced end-to-end
+- [x] Convex client auth via Clerk token (no dev bearer)
+- [x] WS token validation enforced end-to-end
 
 - Clerk JWT template `convex` + Convex auth config
 - Backend: require Clerk bearer on **every** HTTP endpoint (`/stt`, `/tts`, `/chat`, `/ingest`, `/webrtc/*`, calendar)
@@ -166,8 +166,8 @@ This avoids putting the Clerk token in the WS URL.
 Checklist
 - [x] Core endpoints wired (/stt, /tts, /chat, /notes/refresh, /ingest, /context)
 - [x] Grok-backed notes/chat with Convex-first fallback store
-- [ ] Debounce thresholds applied (DEBOUNCE_MS/DEBOUNCE_TURNS)
-- [ ] Rate limits + debug event buffer
+- [x] Debounce thresholds applied (DEBOUNCE_MS/DEBOUNCE_TURNS)
+- [x] Rate limits + debug event buffer
 - [ ] Audio retention policy enforcement
 - [ ] Integration + fallback tests
 
