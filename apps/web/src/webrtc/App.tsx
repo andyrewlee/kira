@@ -12,6 +12,7 @@ import { useWebRTCStats } from "./hooks/useWebRTCStats";
 import { useAudioStream } from "./hooks/useAudioStream";
 import type { Message, TranscriptEntry } from "./types/messages";
 import { fetchMeetingContext } from "../context/fakeConvex";
+import { renderContextText } from "@kira/shared/context";
 
 function App() {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -163,13 +164,7 @@ function App() {
   const pushMeetingContext = useCallback(async () => {
     try {
       const ctx = await fetchMeetingContext(meetingIdRef.current);
-      const turnsText = ctx.turns
-        .map((t) => `${ctx.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)
-        .join("\\n");
-      const notesText = ctx.notes.join("\\n");
-      const contextPayload = `Meeting Context\\nAliases: ${JSON.stringify(
-        ctx.speakerAliases
-      )}\\nSummary: ${ctx.summary}\\nNotes:\\n${notesText}\\nRecent turns:\\n${turnsText}`;
+      const contextPayload = renderContextText(ctx);
       sendContextRef.current?.(contextPayload);
       console.log("📨 Sent meeting context to agent");
     } catch (err) {
