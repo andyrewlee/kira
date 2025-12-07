@@ -6,21 +6,23 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Message } from "../types/messages";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== "undefined" ? window.location.origin.replace("5173", "4000") : "http://localhost:4000");
+const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "dev-token";
 
-interface SessionResponse {
-  client_secret: {
-    value: string;
-    expires_at: number;
-  };
-  voice: string;
-  instructions: string;
-  error?: string;
-}
+type SessionResponse =
+  | {
+      sessionId: string;
+      wsUrl: string;
+      wsToken: string;
+      sampleRate: number;
+      connectTimeoutMs?: number;
+    }
+  | { error: string };
 
-// Enable TURN servers for restrictive networks (adds 10-15s delay if TURN server is slow/unreachable)
-// Set to false for development/most networks (STUN is sufficient)
-const ENABLE_TURN = true;
+// Enable TURN servers for restrictive networks (env-driven); this client does not force TURN
+const ENABLE_TURN = import.meta.env.VITE_ENABLE_TURN === "1";
 
 // Helper to get timestamp with milliseconds for debugging
 const getTimestamp = () => {
@@ -241,28 +243,14 @@ export function useWebRTC(
       setIsConnecting(true);
       setIsConnected(false);
 
-      // 1. Get ephemeral token first
-      console.log(`[${getTimestamp()}] 📝 Getting ephemeral token...`);
-      const tokenResponse = await fetch(`${API_BASE_URL}/session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!tokenResponse.ok) {
-        throw new Error(`Failed to get ephemeral token: ${tokenResponse.statusText}`);
-      }
-
-      const tokenData: SessionResponse = await tokenResponse.json();
-      if (tokenData.error) {
-        throw new Error(tokenData.error);
-      }
-      console.log(`[${getTimestamp()}] ✅ Ephemeral token received`);
-
-      // 2. Create session with sample rate
+      // 1. Create session with sample rate
       console.log(`[${getTimestamp()}] 📝 Creating WebRTC session with sample rate: ${sampleRate}Hz`);
-      const response = await fetch(`${API_BASE_URL}/sessions`, {
+      const response = await fetch(`${API_BASE_URL}/webrtc/sessions`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${AUTH_BEARER}`,
+        },
         body: JSON.stringify({
           sample_rate: sampleRate,
         }),
@@ -272,9 +260,13 @@ export function useWebRTC(
         throw new Error(`Failed to create session: ${response.statusText}`);
       }
 
-      const data = await response.json();
-      sessionIdRef.current = data.session_id;
-      console.log(`[${getTimestamp()}] ✅ Session created: ${data.session_id} with ${data.sample_rate}Hz`);
+      const data: any = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      sessionIdRef.current = data.sessionId;
+      const wsToken: string = data.wsToken;
+      const connectTimeoutMs: number | undefined = data.connectTimeoutMs;
+      console.log(`[${getTimestamp()}] ✅ Session created: ${data.sessionId} with ${data.sampleRate}Hz`);
 
       // 2. Set up peer connection
       const pc = setupPeerConnection();
@@ -288,13 +280,22 @@ export function useWebRTC(
       console.log(`[${getTimestamp()}] 📡 DataChannel created`);
 
       // 4. Connect to signaling WebSocket
-      const signalingUrl = `${API_BASE_URL.replace("http", "ws")}/signaling/${data.session_id}`;
+      const signalingUrl = `${API_BASE_URL.replace("http", "ws")}/webrtc/signaling/${data.sessionId}?token=${encodeURIComponent(
+        wsToken
+      )}`;
       console.log(`[${getTimestamp()}] 🔌 Connecting to signaling: ${signalingUrl}`);
 
       const ws = new WebSocket(signalingUrl);
       signalingWsRef.current = ws;
 
       return new Promise<void>((resolve, reject) => {
+        const timeoutMs = connectTimeoutMs || 8000;
+        const timer = setTimeout(() => {
+          console.error(`[${getTimestamp()}] ⏱️ WebRTC connect timeout after ${timeoutMs}ms`);
+          ws.close();
+          reject(new Error("WebRTC connect timeout"));
+        }, timeoutMs);
+
         ws.onopen = () => {
           console.log(`[${getTimestamp()}] ✅ Signaling WebSocket connected`);
         };
@@ -329,6 +330,7 @@ export function useWebRTC(
               case "ready":
                 console.log(`[${getTimestamp()}] ✅ WebRTC connection ready`);
                 // Connection state will be updated by onconnectionstatechange
+                clearTimeout(timer);
                 resolve();
                 break;
 
@@ -345,11 +347,13 @@ export function useWebRTC(
 
         ws.onerror = (error) => {
           console.error("❌ Signaling WebSocket error:", error);
-          reject(error);
+          clearTimeout(timer);
+          reject(error as any);
         };
 
         ws.onclose = () => {
           console.log("❌ Signaling WebSocket closed");
+          clearTimeout(timer);
         };
       });
     } catch (error) {
@@ -384,8 +388,9 @@ export function useWebRTC(
 
     // Delete session
     if (sessionIdRef.current) {
-      fetch(`${API_BASE_URL}/sessions/${sessionIdRef.current}`, {
+      fetch(`${API_BASE_URL}/webrtc/sessions/${sessionIdRef.current}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${AUTH_BEARER}` },
       }).catch(console.error);
       sessionIdRef.current = null;
     }
@@ -456,4 +461,3 @@ export function useWebRTC(
     peerConnection: peerConnectionRef.current,
   };
 }
-
