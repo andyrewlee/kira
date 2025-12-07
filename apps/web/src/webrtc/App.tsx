@@ -2,7 +2,7 @@
  * Main App component
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { TopBar } from "./components/TopBar";
 import { ControlPanel } from "./components/ControlPanel";
 import { DebugConsole } from "./components/DebugConsole";
@@ -11,11 +11,14 @@ import { useWebRTC } from "./hooks/useWebRTC";
 import { useWebRTCStats } from "./hooks/useWebRTCStats";
 import { useAudioStream } from "./hooks/useAudioStream";
 import type { Message, TranscriptEntry } from "./types/messages";
+import { fetchMeetingContext } from "../context/fakeConvex";
 
 function App() {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const currentTranscriptRef = useRef<{ role: "user" | "assistant"; content: string } | null>(null);
   const sendMessageRef = useRef<((message: Message) => void) | null>(null);
+  const sendContextRef = useRef<(text: string) => void>(() => {});
+  const meetingIdRef = useRef<string>("demo-meeting");
 
   const { isCapturing, startCapture, stopCapture, stopPlayback, playAudio, audioLevel, sampleRate } =
     useAudioStream();
@@ -28,6 +31,7 @@ function App() {
     // Handle XAI ready signal - start capturing audio now
     if (message.type === "xai.ready") {
       console.log("🎤 XAI is ready - starting audio capture");
+      void pushMeetingContext();
       if (startCaptureRef.current && sendMessageRef.current) {
         startCaptureRef.current((base64Audio) => {
           sendMessageRef.current?.({
@@ -154,12 +158,31 @@ function App() {
     }
   }, [playAudio, stopPlayback]);
 
+  // Push meeting context (stub; replace with Convex fetch)
+  const pushMeetingContext = useCallback(async () => {
+    try {
+      const ctx = await fetchMeetingContext(meetingIdRef.current);
+      const turnsText = ctx.turns
+        .map((t) => `${ctx.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)
+        .join("\\n");
+      const notesText = ctx.notes.join("\\n");
+      const contextPayload = `Meeting Context\\nAliases: ${JSON.stringify(
+        ctx.speakerAliases
+      )}\\nSummary: ${ctx.summary}\\nNotes:\\n${notesText}\\nRecent turns:\\n${turnsText}`;
+      sendContextRef.current?.(contextPayload);
+      console.log("📨 Sent meeting context to agent");
+    } catch (err) {
+      console.error("Failed to send meeting context", err);
+    }
+  }, []);
+
   const {
     isConnected,
     isConnecting,
     connect,
     disconnect,
     sendMessage,
+    sendContext,
     debugLogs,
     clearLogs,
     provider,
@@ -172,6 +195,7 @@ function App() {
 
   // Store sendMessage in ref to avoid circular dependency
   sendMessageRef.current = sendMessage;
+  sendContextRef.current = sendContext;
 
   // Start conversation
   const handleStart = async () => {
