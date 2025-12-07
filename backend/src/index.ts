@@ -49,7 +49,6 @@ app.post("/tts", requireAuth, async (req, res) => {
   }
 });
 app.post("/chat", requireAuth, (_req, res) => res.status(501).json({ error: "Chat not implemented" }));
-app.post("/meetings/:id/ingest", requireAuth, (_req, res) => res.status(501).json({ error: "Ingest not implemented" }));
 app.post("/notes/refresh", requireAuth, (_req, res) => res.status(501).json({ error: "Notes refresh not implemented" }));
 
 // Temporary in-memory meeting handlers (replace with Convex wiring)
@@ -68,6 +67,13 @@ app.get("/meetings/:id/context", requireAuth, (req, res) => {
   const ctx = store.getContext(req.params.id, Number(req.query.tail) || 60);
   if (!ctx) return res.status(404).json({ error: "Meeting not found" });
   res.json(ctx);
+});
+
+app.post("/meetings/:id/ingest", requireAuth, (req, res) => {
+  const meetingId = req.params.id;
+  const { channel = "mic", speakerKey = "me", text = "", ts = Date.now(), source = "human" } = req.body || {};
+  store.appendTurn({ meetingId, channel, speakerKey, text, ts, source });
+  res.json({ ok: true });
 });
 
 // Phase 5 WebRTC relay (xAI example integration)
