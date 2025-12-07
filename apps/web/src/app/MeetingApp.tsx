@@ -24,7 +24,7 @@ function MeetingAppInner() {
     addToast("Demo seeded", "info");
   };
   const handleReset = async () => {
-    await resetMeeting("demo");
+    await resetMeeting(meetingId);
     await loadContext();
     addToast("Meeting reset", "info");
   };
