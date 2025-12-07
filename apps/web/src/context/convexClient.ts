@@ -6,7 +6,7 @@ import { getAuthToken } from "../app/api";
 
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
-const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "dev-token";
+const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "";
 
 const convexClient = CONVEX_URL ? new ConvexHttpClient(CONVEX_URL) : null;
 let convexAuthSet = false;

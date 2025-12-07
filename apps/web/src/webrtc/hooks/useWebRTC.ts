@@ -10,7 +10,7 @@ import { getAuthToken } from "../../app/api";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (typeof window !== "undefined" ? window.location.origin.replace("5173", "4000") : "http://localhost:4000");
-const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "dev-token";
+const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "";
 
 const emitWebRTCError = (msg: string) => {
   if (typeof window !== "undefined") {

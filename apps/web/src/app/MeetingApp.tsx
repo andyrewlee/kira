@@ -19,7 +19,7 @@ import { blobToBase64 } from "./utils";
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === "1";
-const DEV_TOKEN = import.meta.env.VITE_DEMO_BEARER || "dev-token";
+const DEV_TOKEN = import.meta.env.VITE_DEMO_BEARER || "";
 const AUDIO_RETENTION = import.meta.env.VITE_AUDIO_RETENTION || "discard";
 
 function MeetingAppInner() {
