@@ -12,7 +12,8 @@
     "dev:web": "npm run dev -w @kira/web",
     "dev:backend": "npm run dev -w @kira/backend",
     "dev": "npm run dev:backend & npm run dev:web",
-    "test": "npm -ws test"
+    "test": "npm -ws test",
+    "smoke": "node scripts/smoke.js"
   },
   "dependencies": {
     "convex": "^1.14.1"
