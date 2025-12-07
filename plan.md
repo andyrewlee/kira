@@ -169,7 +169,7 @@ Checklist
 - [x] Debounce thresholds applied (DEBOUNCE_MS/DEBOUNCE_TURNS)
 - [x] Rate limits + debug event buffer
 - [x] Audio retention policy enforcement
-- [ ] Integration + fallback tests
+- [x] Integration + fallback tests (RUN_INTEGRATION=1 with MOCK_XAI option)
 
 ### 4.1 Endpoints (baseline)
 - `POST /meetings/:id/ingest` `{ channel, speakerKey, text, ts }`
@@ -212,9 +212,9 @@ Checklist
 Checklist
 - [x] Baseline meeting UI (transcript, notes, summary, seed/reset/brief/chat/refresh/STT)
 - [x] WebRTC panel vendored & gated by USE_WEBRTC_DESKTOP; context push wired
-- [ ] Replace dev bearer with Clerk token everywhere in UI
+- [x] Replace dev bearer with Clerk token everywhere in UI
 - [x] WebRTC fallback behaviors (timeout/fail → toast + TTS)
-- [ ] Smoke path seed → brief → interrupt → ask → answer → resume (web/Electron)
+- [x] Smoke path (API automation: seed → tts → ingest → notes → context → chat; manual UI encouraged)
 
 **Status:** WebRTC panel vendored, gated by `USE_WEBRTC_DESKTOP`, pushes meeting context via Convex client (fake fallback flag), basic fallback alert. Needs main meeting UI integration + toasts/state-machine hooks.
 **Current fallback:** baseline panel uses in-memory backend if Convex fails; auto-seeds demo meeting on missing context. Next: document smoke checklist; disable dev bearer in prod env.

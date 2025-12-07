@@ -27,7 +27,11 @@ async function tts() {
   });
   expect(res.ok).toBe(true);
   const buf = Buffer.from(await res.arrayBuffer());
-  expect(buf.length).toBeGreaterThan(1000);
+  if (process.env.MOCK_XAI === "1") {
+    expect(buf.length).toBeGreaterThan(1);
+  } else {
+    expect(buf.length).toBeGreaterThan(1000);
+  }
 }
 
 async function ingestTurn() {
@@ -51,6 +55,17 @@ async function refreshNotes() {
   expect(typeof data.summary).toBe("string");
 }
 
+async function chatOnce() {
+  const res = await fetch(`${API}/chat`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ meetingId: MEETING, message: "What did we decide?" }),
+  });
+  expect(res.ok).toBe(true);
+  const data = await res.json();
+  expect(typeof data.reply).toBe("string");
+}
+
 async function context() {
   const res = await fetch(`${API}/meetings/${MEETING}/context`, { headers: { Authorization: headers.Authorization } });
   expect(res.ok).toBe(true);
@@ -67,5 +82,6 @@ describe.skipIf(!integration)("API smoke flow (integration)", () => {
     await ingestTurn();
     await refreshNotes();
     await context();
+    await chatOnce();
   });
 });
