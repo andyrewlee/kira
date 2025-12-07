@@ -8,6 +8,7 @@ import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeC
 import { fetchMeetingContext as fetchMeetingContextConvex } from "../context/convexClient";
 import { MeetingContextPayload, renderContextText } from "@shared";
 import { playMp3Blob } from "./audio";
+import { getAuthHeader } from "./api";
 
 const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
@@ -42,6 +43,21 @@ function MeetingAppInner() {
     }
   };
 
+  const handleAddTurn = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/meetings/${meetingId}/ingest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
+        body: JSON.stringify({ channel: "mic", speakerKey: "me", text: "New demo turn at " + new Date().toLocaleTimeString(), ts: Date.now(), source: "human" }),
+      });
+      await loadContext();
+      addToast("Added demo turn", "success");
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to add turn", "error");
+    }
+  };
+
   const loadContext = React.useCallback(async () => {
     try {
       const ctx = USE_FAKE_CONTEXT
@@ -65,6 +81,7 @@ function MeetingAppInner() {
           onSeed={handleSeed}
           onReset={handleReset}
           onBrief={handleBrief}
+          onAddTurn={handleAddTurn}
           transcript={(context?.turns || []).map((t) => `${context?.speakerAliases[t.speakerKey] || t.speakerKey}: ${t.text}`)}
           notes={context?.notes || []}
           summary={context?.summary || ""}
