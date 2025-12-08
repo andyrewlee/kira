@@ -1,0 +1,22 @@
+{
+  "name": "@kira/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Kira desktop shell for the meeting copilot",
+  "author": "Kira",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "npm run build && NODE_ENV=development electron ./dist/main.js",
+    "build": "esbuild src/main.ts src/preload.ts --bundle --platform=node --format=cjs --outdir=dist --external:electron",
+    "start": "NODE_ENV=production electron ./dist/main.js",
+    "pack": "npm run build -w @kira/web && npm run build && electron-builder --dir",
+    "dist": "npm run build -w @kira/web && npm run build && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^30.0.9",
+    "electron-builder": "^25.1.7",
+    "music-metadata": "^7.14.0",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.6.3"
+  }
+}

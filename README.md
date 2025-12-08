@@ -1,34 +1,55 @@
-# Kira voice demo (web + backend)
+# Kira voice demo (web + backend + desktop)
 
-## Quick start
-1) Install deps
+## Quick start (dev)
+1) Install deps  
 ```bash
 npm install
 ```
-2) Set env
-- copy `.env.example` to `.env`
-- set `XAI_API_KEY` for TTS/WebRTC
-- set `CLERK_JWT_PUBLIC_KEY` (or leave empty for dev bypass)
-- optional: set `VITE_API_BASE_URL` (default http://localhost:4000)
+2) Copy env + set keys  
+- `cp .env.example .env`  
+- set `XAI_API_KEY` for TTS/WebRTC  
+- set Clerk: `VITE_CLERK_PUBLISHABLE_KEY` (web) and `CLERK_JWKS_URL` or `CLERK_JWT_PUBLIC_KEY` (backend/Convex)  
+- optional: `VITE_API_BASE_URL` (default http://localhost:4000)
 
-3) Run backend + web
+3) Run backend + web  
 ```bash
-npm run dev:backend   # port 4000
-npm run dev:web       # vite (5173, auto-shifts if busy)
+PORT=4000 DEV_MODE=1 DEV_BEARER=dev-token MOCK_XAI=1 npm run dev:backend
+npm run dev:web   # Vite on 5173
 ```
-Or run both: `npm run dev`.
+Or both: `npm run dev`.
+
+4) Desktop (dev):  
+```bash
+npm run dev:desktop   # waits for Vite; falls back to file:// build
+```
+
+## Production build
+- Web: `npm run build -w @kira/web`
+- Desktop bundle only: `npm run build -w @kira/desktop`
+- Desktop installers (mac arm64 DMG unsigned): `npm run dist -w @kira/desktop` → `apps/desktop/dist_electron/Kira-0.0.1-arm64.dmg`
+
+### Desktop signing (optional)
+- Drop icons: `apps/desktop/build/icons/icon.icns` (mac), `icon.ico` (win), `256x256.png` (linux).
+- Set signing envs when running `npm run dist -w @kira/desktop`:
+  - mac: `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `CSC_IDENTITY_AUTO_DISCOVERY=false`, `CSC_NAME="Developer ID Application: <Your Team>"`
+  - win: `CSC_LINK` (pfx), `CSC_KEY_PASSWORD`
+- Outputs remain under `apps/desktop/dist_electron/`.
+
+## Tests
+- Lint: `npm run lint`
+- Typecheck: `npm run typecheck`
+- Core unit tests: `npm run test:core`
+- Integration (needs backend running as above):  
+`RUN_INTEGRATION=1 TOKEN=dev-token API=http://localhost:4000 MOCK_XAI=1 npm run test -w @kira/tests`
 
 ## Features (current)
-- Web baseline panel: seed/reset demo meeting, add demo turn, Brief Me (calls backend /tts), shows transcript/notes/summary from in-memory backend (auto-seeds if missing).
-- WebRTC panel: xAI WebRTC example embedded, gated by `USE_WEBRTC_DESKTOP`; sends meeting context over DataChannel.
-- Backend: in-memory meetings (seed/reset/ingest/context), TTS proxy to xAI, WebRTC relay mounted at `/webrtc/*`, auth stub with optional Clerk JWT verify.
+- Baseline panel: seed/reset demo, add demo turn, Brief Me (TTS mp3), tap interrupt, playback speed/skip, speaker rename, STT from loaded audio (desktop), debug events panel (auto-refresh on desktop).
+- WebRTC panel: voice agent sample; sends meeting context; falls back to baseline TTS on failure; ICE/TURN configurable.
+- Auth: Clerk tokens end-to-end; dev bearer allowed only when `DEV_MODE=1`/`VITE_DEV_MODE=1`.
+- Desktop preload: `isDesktop`, `getVersion`, `openLogs`, `selectAudioFile`, `loadAudioFile`, `loadAudioByPath`, `checkFile`.
 
-## Pending
-- Real Convex client (needs `npx convex dev` / CONVEX_DEPLOYMENT) and swap in for in-memory store.
-- Real Clerk tokens from the web app (replace `VITE_DEMO_BEARER` / localStorage override).
-- STT/Chat/Notes refresh endpoints to call Grok; state-machine/toast polish for WebRTC fallback.
-
-## Manual smoke (no scripts)
-1) Start backend (`npm run dev:backend`) and web (`npm run dev:web`).
-2) In the web baseline panel: Seed demo → Brief Me → Record STT → Refresh notes → Ask “what did we decide?”.
-3) Verify transcript/notes/summary update; WebRTC panel connects (if enabled) and shows context.
+## Manual smoke
+1) Seed demo → Brief Me → Record STT → Refresh notes → Ask “what did we decide?”  
+2) Confirm transcript/notes/summary update.  
+3) Desktop: load audio file, run STT, replay via “Re-run STT”; unplug file to see “missing” status.  
+4) WebRTC panel: start; if it fails, baseline briefing auto-fallback and toast.

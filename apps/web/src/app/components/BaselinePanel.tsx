@@ -24,13 +24,47 @@ interface Props {
   onRefreshEvents?: () => void;
   voiceInterruptMode?: string;
   playbackSpeed?: number;
+  isDesktop?: boolean;
+  onOpenLogs?: () => void;
+  desktopVersion?: string;
+  onSelectAudio?: () => void;
+  selectedAudioPath?: string | null;
+  selectedAudioSizeMb?: string | null;
+  selectedAudioDuration?: string | null;
+  onReplayAudio?: () => void;
+  onClearSavedAudio?: () => void;
+  showAudioStatus?: boolean;
+  audioStatus?: "none" | "loaded" | "missing";
+  autoRefreshEvents?: boolean;
+  onToggleAutoRefresh?: () => void;
 }
 
-export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAddTurn, onChat, onRefreshNotes, onSTT, onInterrupt, onSkipBack, onSkipForward, onSpeedChange, transcript = [], notes = [], summary = "", lastSTT = "", isRecording = false, speakerMe = "Me", speakerThem = "Them", onRenameSpeaker, events = [], onRefreshEvents, voiceInterruptMode = "tap", playbackSpeed = 1 }) => {
+export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAddTurn, onChat, onRefreshNotes, onSTT, onInterrupt, onSkipBack, onSkipForward, onSpeedChange, transcript = [], notes = [], summary = "", lastSTT = "", isRecording = false, speakerMe = "Me", speakerThem = "Them", onRenameSpeaker, events = [], onRefreshEvents, voiceInterruptMode = "tap", playbackSpeed = 1, isDesktop = false, onOpenLogs, desktopVersion, onSelectAudio, selectedAudioPath = null, selectedAudioSizeMb = null, selectedAudioDuration = null, onReplayAudio, onClearSavedAudio, showAudioStatus = true, audioStatus = "none", autoRefreshEvents = false, onToggleAutoRefresh }) => {
   return (
     <div style={{ padding: "1rem", background: "#0f172a", color: "#e2e8f0", minHeight: "100vh" }}>
-      <h1 style={{ margin: 0, fontSize: "20px" }}>Kira Meeting</h1>
-      <p style={{ color: "#94a3b8", marginTop: "4px" }}>Transcript, notes, and briefing controls</p>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+        <h1 style={{ margin: 0, fontSize: "20px" }}>Kira Meeting</h1>
+        <span style={{ color: "#94a3b8" }}>Transcript, notes, and briefing controls</span>
+        {isDesktop ? (
+          <span style={{ fontSize: "12px", color: "#cbd5e1", padding: "2px 8px", background: "#1f2937", borderRadius: 999 }}>
+            Desktop {desktopVersion ? `v${desktopVersion}` : ""}
+          </span>
+        ) : null}
+        {isDesktop && showAudioStatus ? (
+          <span
+            style={{
+              fontSize: "12px",
+              color: audioStatus === "missing" ? "#f87171" : audioStatus === "loaded" ? "#22c55e" : "#f59e0b",
+              padding: "2px 8px",
+              background: "#111827",
+              borderRadius: 999,
+              border: "1px solid #1f2937",
+            }}
+          >
+            Audio: {audioStatus === "missing" ? "Missing" : audioStatus === "loaded" ? "Loaded" : "None"}
+          </span>
+        ) : null}
+      </div>
 
       <div style={{ display: "flex", gap: "0.5rem", margin: "1rem 0", flexWrap: "wrap" }}>
         <button onClick={onSeed} style={buttonStyle}>Seed Demo</button>
@@ -51,6 +85,14 @@ export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAdd
             ))}
           </select>
         </div>
+        {isDesktop && onOpenLogs ? (
+          <>
+            <button onClick={onOpenLogs} style={buttonStyle}>Open Logs Folder</button>
+            {onSelectAudio ? <button onClick={onSelectAudio} style={buttonStyle}>Load Audio File</button> : null}
+            {onReplayAudio && selectedAudioPath ? <button onClick={onReplayAudio} style={buttonStyle}>Re-run STT</button> : null}
+            {onClearSavedAudio && selectedAudioPath ? <button onClick={onClearSavedAudio} style={buttonStyle}>Clear Saved Audio</button> : null}
+          </>
+        ) : null}
       </div>
 
       <div style={cardStyle}>
@@ -87,10 +129,28 @@ export const BaselinePanel: React.FC<Props> = ({ onSeed, onReset, onBrief, onAdd
         </div>
       ) : null}
 
+      {isDesktop && selectedAudioPath ? (
+        <div style={cardStyle}>
+          <h2 style={sectionTitle}>Loaded audio</h2>
+          <p style={{ color: "#cbd5e1", fontSize: "13px", wordBreak: "break-all" }}>
+            {selectedAudioPath}
+            {selectedAudioSizeMb ? ` (${selectedAudioSizeMb} MB)` : ""}
+            {selectedAudioDuration ? ` • ${selectedAudioDuration}` : ""}
+          </p>
+        </div>
+      ) : null}
+
       <div style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
           <h2 style={sectionTitle}>Debug events (last 50)</h2>
-          <button onClick={onRefreshEvents} style={smallButtonStyle}>Refresh</button>
+          <div style={{ display: "flex", gap: "6px" }}>
+            {isDesktop ? (
+              <button onClick={onToggleAutoRefresh} style={{ ...smallButtonStyle, background: autoRefreshEvents ? "#14532d" : "#1f2937", borderColor: autoRefreshEvents ? "#22c55e" : "#1f2937" }}>
+                {autoRefreshEvents ? "Live" : "Live Off"}
+              </button>
+            ) : null}
+            <button onClick={onRefreshEvents} style={smallButtonStyle}>Refresh</button>
+          </div>
         </div>
         <div style={{ maxHeight: 180, overflowY: "auto", fontSize: "12px", color: "#cbd5e1" }}>
           {events.length === 0 ? <p style={{ color: "#64748b" }}>No events yet.</p> :

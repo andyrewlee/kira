@@ -216,9 +216,9 @@ Checklist
 - [x] WebRTC fallback behaviors (timeout/fail → toast + TTS)
 - [x] Smoke path (API automation: seed → tts → ingest → notes → context → chat; manual UI encouraged)
 
-**Status:** WebRTC panel vendored, gated by `USE_WEBRTC_DESKTOP`, pushes meeting context via Convex client (fake fallback flag), basic fallback alert. Needs main meeting UI integration + toasts/state-machine hooks.
-**Current fallback:** baseline panel uses in-memory backend if Convex fails; auto-seeds demo meeting on missing context. Next: document smoke checklist; disable dev bearer in prod env.
-**TODO:** replace demo bearer with Clerk session token; swap in Convex client when deployment is set.
+**Status:** WebRTC panel integrated into the Meeting screen; env flags in `.env.example`; connection timeout + error paths trigger baseline TTS fallback with toast + state-machine cancel; meeting context pushed over DataChannel.
+**Current fallback:** baseline panel still works with in-memory backend when Convex is down and auto-seeds demo context; WebRTC auto-falls back to baseline briefing on timeout/disconnect.
+**TODO:** run the smoke test on web + Electron; tune TURN/ICE config per venue; consider exposing `INSTRUCTIONS` text in the env file.
 
 ### 5.1 Baseline UI
 - Meeting screen:
@@ -236,10 +236,10 @@ Checklist
 ### 5.2 WebRTC Voice Agent (web/Electron) — xAI example integration
 - [x] Vendor `xai-voice-examples-main/examples/agent/webrtc/server` → `backend/webrtc` and prefix routes to `/webrtc/*`.
 - [x] Add auth + wsToken: `POST /webrtc/sessions` issues `{sessionId, wsUrl, wsToken}`; `WS /webrtc/signaling/:sessionId?token=...` validates token. Added `DELETE /webrtc/sessions/:id` cleanup.
-- [ ] Expose flags via env: `USE_WEBRTC_DESKTOP`, `BRIEFING_MODE`, `VOICE_INTERRUPT_MODE`, `WEBRTC_CONNECT_TIMEOUT_MS`, `ICE_SERVERS` JSON, `ENABLE_TURN`, `VOICE`, `INSTRUCTIONS`, `ALLOWED_ORIGINS`.
+- [x] Expose flags via env: `USE_WEBRTC_DESKTOP`, `BRIEFING_MODE`, `VOICE_INTERRUPT_MODE`, `WEBRTC_CONNECT_TIMEOUT_MS`, `ICE_SERVERS` JSON, `ENABLE_TURN`, `VOICE`, `INSTRUCTIONS`, `ALLOWED_ORIGINS`.
 - [x] Port client hook/UI from `examples/agent/webrtc/client` into `apps/web` behind flag; reuse Control/Stats/Debug, styled to match Kira.
 - [x] Inject meeting context over DataChannel on connect + debounced refresh (aliases, notes, summary, tail turns).
-- [ ] Implement fallbacks: connect timeout/failed/disconnected → stop agent audio, toast, switch to baseline TTS.
+- [x] Implement fallbacks: connect timeout/failed/disconnected → stop agent audio, toast, switch to baseline TTS.
 - [ ] Smoke test: seed → brief → interrupt → ask → answer → resume (browser + Electron dev).
 
 #### 5.2.1 Architecture (keep split!)
@@ -323,11 +323,14 @@ Surface:
 ## Phase 6 — Electron wrapper (no duplicated UI)
 **Goal:** avoid “white screen” at the end.
 Checklist
-- [ ] Load web dev server in dev
-- [ ] Load file:// build in prod; test once
+- [x] Load web dev server in dev (waits, then falls back to file build)
+- [x] Load file:// build in prod; tested
+- [x] Single-instance lock, window/nav guards, menu, devtools
+- [x] Preload exposes desktop helpers (version, logs, load/select/check audio, loadAudioByPath)
+- [x] Desktop build + DMG packaging (`npm run dist -w @kira/desktop`)
 
-- Dev: load web dev server URL
-- Prod: load `file://.../dist/index.html` (test once early)
+- Dev: load web dev server URL; fallback if unreachable
+- Prod: load `file://.../apps/web/dist/index.html`
 - Electron main is a loader + platform hooks only
 
 ---

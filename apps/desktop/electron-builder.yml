@@ -1,0 +1,26 @@
+appId: com.kira.desktop
+productName: Kira
+electronVersion: 30.0.9
+directories:
+  output: dist_electron
+files:
+  - dist/**
+  - ../web/dist/**
+  - package.json
+asar: true
+mac:
+  category: public.app-category.productivity
+  icon: build/icons/icon.icns
+  hardenedRuntime: true
+  target:
+    - dmg
+  entitlements: build/entitlements.mac.plist
+win:
+  icon: build/icons/icon.ico
+  target:
+    - nsis
+linux:
+  icon: build/icons
+  target:
+    - AppImage
+publish: false

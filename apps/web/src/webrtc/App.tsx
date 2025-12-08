@@ -15,8 +15,12 @@ import { fetchMeetingContext as fetchMeetingContextFake } from "../context/fakeC
 import { fetchMeetingContext as fetchMeetingContextConvex } from "../context/convexClient";
 import { renderContextText } from "@shared/context";
 
-const WEBRTC_ENABLED = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
+const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+const IS_DESKTOP = (window as any)?.kiraDesktop?.isDesktop || searchParams?.get("desktop") === "1";
+
+const WEBRTC_ENABLED = IS_DESKTOP ? true : import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
+const VOICE_INTERRUPT_MODE = import.meta.env.VITE_VOICE_INTERRUPT_MODE || "tap";
 
 function App() {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -109,6 +113,10 @@ function App() {
       // Stop any currently playing audio when user interrupts
       stopPlayback();
       console.log("🛑 User interrupted - stopping playback");
+
+      if (VOICE_INTERRUPT_MODE === "voice") {
+        window.dispatchEvent(new Event("webrtc:interrupt"));
+      }
 
       currentTranscriptRef.current = {
         role: "user",
@@ -203,7 +211,7 @@ function App() {
   const handleStart = async () => {
     try {
       if (!WEBRTC_ENABLED) {
-        fallbackToBaseline();
+        fallbackToBaseline("desktop_disabled");
         return;
       }
       // Clear logs and transcript
@@ -231,10 +239,10 @@ function App() {
   };
 
   // Simple fallback handler (replace with UI toast + state machine hook-in)
-  const fallbackToBaseline = useCallback(() => {
-    console.warn("Voice agent unavailable — falling back to baseline TTS");
+  const fallbackToBaseline = useCallback((reason?: string) => {
+    console.warn("Voice agent unavailable — falling back to baseline TTS", reason);
     if (typeof window !== "undefined") {
-      window.alert("Voice agent unavailable — using standard briefing");
+      window.dispatchEvent(new CustomEvent("webrtc:fallback", { detail: reason || "unavailable" }));
     }
   }, []);
 
@@ -251,12 +259,40 @@ function App() {
   }, [isConnected, isConnecting, fallbackToBaseline]);
 
   // Stop conversation
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     stopCapture();
     stopPlayback(); // Stop any playing audio
     disconnect();
     // Note: Transcript is preserved and only cleared on next start
-  };
+  }, [disconnect, stopCapture, stopPlayback]);
+
+  // Listen for baseline app briefing requests (window event) so BRIEFING_MODE=webrtc is honored
+  useEffect(() => {
+    const onBrief = (event: Event) => {
+      const summary = (event as CustomEvent<string>).detail || "";
+      if (!isConnected || !sendMessageRef.current) {
+        fallbackToBaseline("not_connected_for_briefing");
+        return;
+      }
+      sendMessageRef.current({
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: "user",
+          content: [{ type: "input_text", text: `Read this meeting briefing out loud: ${summary}` }],
+        },
+      } as any);
+    };
+    window.addEventListener("webrtc:brief", onBrief as any);
+    return () => window.removeEventListener("webrtc:brief", onBrief as any);
+  }, [fallbackToBaseline, isConnected]);
+
+  // Stop capture/playback if fallback is triggered elsewhere
+  useEffect(() => {
+    const onFallback = () => handleStop();
+    window.addEventListener("webrtc:fallback", onFallback as any);
+    return () => window.removeEventListener("webrtc:fallback", onFallback as any);
+  }, [handleStop]);
 
   return (
     <div

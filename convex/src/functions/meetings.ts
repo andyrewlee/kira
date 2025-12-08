@@ -2,23 +2,34 @@ import { mutation, query } from "../../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../../_generated/dataModel";
 
-async function requireAuth(ctx: any) {
-  const identity = await ctx.auth.getUserIdentity?.();
-  if (!identity) throw new Error("Unauthorized");
-  return identity;
+type Identity = { subject: string };
+
+async function requireIdentity(ctx: any): Promise<Identity> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity || !identity.subject) {
+    throw new Error("Unauthorized");
+  }
+  return { subject: identity.subject };
+}
+
+async function requireMeetingOwner(ctx: any, meetingId: Id<"meetings">) {
+  const identity = await requireIdentity(ctx);
+  const meeting = await ctx.db.get(meetingId);
+  if (!meeting) throw new Error("Meeting not found");
+  if (meeting.userId !== identity.subject) throw new Error("Forbidden");
+  return { meeting, identity };
 }
 
 export const createMeeting = mutation({
   args: {
     title: v.string(),
-    userId: v.string(),
     startedAt: v.number(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const { subject } = await requireIdentity(ctx);
     const meetingId = await ctx.db.insert("meetings", {
       title: args.title,
-      userId: args.userId,
+      userId: subject,
       startedAt: args.startedAt,
       notes: [],
       summary: "",
@@ -40,7 +51,7 @@ export const appendTurn = mutation({
     source: v.union(v.literal("human"), v.literal("system"), v.literal("llm")),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireMeetingOwner(ctx, args.meetingId);
     const turnId = await ctx.db.insert("turns", {
       meetingId: args.meetingId,
       channel: args.channel,
@@ -60,12 +71,8 @@ export const renameSpeaker = mutation({
     alias: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-    const meeting = await ctx.db.get(args.meetingId);
-    if (!meeting) throw new Error("Meeting not found");
-    await ctx.db.patch(args.meetingId, {
-      speakerAliases: { ...meeting.speakerAliases, [args.speakerKey]: args.alias },
-    });
+    const { meeting } = await requireMeetingOwner(ctx, args.meetingId);
+    await ctx.db.patch(args.meetingId, { speakerAliases: { ...meeting.speakerAliases, [args.speakerKey]: args.alias } });
   },
 });
 
@@ -76,7 +83,7 @@ export const setNotesAndSummary = mutation({
     summary: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireMeetingOwner(ctx, args.meetingId);
     await ctx.db.patch(args.meetingId, {
       notes: args.notes,
       summary: args.summary,
@@ -89,7 +96,7 @@ export const resetMeeting = mutation({
     meetingId: v.id("meetings"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireMeetingOwner(ctx, args.meetingId);
     await ctx.db.patch(args.meetingId, { notes: [], summary: "" });
     const db: any = ctx.db;
     const turns = await db
@@ -107,10 +114,10 @@ export const seedDemoMeeting = mutation({
     userId: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const { subject } = await requireIdentity(ctx);
     const meetingId = await ctx.db.insert("meetings", {
       title: "Demo Meeting",
-      userId: args.userId,
+      userId: subject,
       startedAt: Date.now(),
       notes: ["Decisions: Proceed with POC", "Actions: Send follow-up deck"],
       summary: "We agreed to move forward with a small POC and follow up with a deck.",
@@ -147,9 +154,7 @@ export const getMeetingContext = query({
     tail: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-    const meeting = await ctx.db.get(args.meetingId);
-    if (!meeting) throw new Error("Meeting not found");
+    const { meeting } = await requireMeetingOwner(ctx, args.meetingId);
     const tail = args.tail ?? 60;
     const db: any = ctx.db;
     const turns = await db

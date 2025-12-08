@@ -10,7 +10,7 @@ import { getAuthToken } from "../../app/api";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (typeof window !== "undefined" ? window.location.origin.replace("5173", "4000") : "http://localhost:4000");
-const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "";
+const ICE_SERVERS_JSON = import.meta.env.VITE_ICE_SERVERS;
 
 const emitWebRTCError = (msg: string) => {
   if (typeof window !== "undefined") {
@@ -36,6 +36,7 @@ type SessionResponse =
 
 // Enable TURN servers for restrictive networks (env-driven); this client does not force TURN
 const ENABLE_TURN = import.meta.env.VITE_ENABLE_TURN === "1";
+const WEBRTC_CONNECT_TIMEOUT_MS = Number(import.meta.env.VITE_WEBRTC_CONNECT_TIMEOUT_MS || 0);
 
 // Helper to get timestamp with milliseconds for debugging
 const getTimestamp = () => {
@@ -190,10 +191,21 @@ export function useWebRTC(
    * Set up peer connection
    */
   const setupPeerConnection = useCallback(() => {
-    const iceServers: RTCIceServer[] = [
+    let iceServers: RTCIceServer[] = [
       { urls: "stun:stun.l.google.com:19302" },
       { urls: "stun:stun1.l.google.com:19302" }, // Backup STUN server
     ];
+
+    if (ICE_SERVERS_JSON) {
+      try {
+        const parsed = JSON.parse(ICE_SERVERS_JSON);
+        if (Array.isArray(parsed) && parsed.length) {
+          iceServers = parsed as RTCIceServer[];
+        }
+      } catch (err) {
+        console.warn("Failed to parse VITE_ICE_SERVERS, using defaults", err);
+      }
+    }
 
     // Add TURN servers if enabled (only needed for restrictive corporate firewalls)
     if (ENABLE_TURN) {
@@ -249,6 +261,10 @@ export function useWebRTC(
     // Handle ICE connection state changes
     pc.oniceconnectionstatechange = () => {
       console.log(`[${getTimestamp()}] 🧊 ICE connection state: ${pc.iceConnectionState}`);
+      if (pc.iceConnectionState === "failed" || pc.iceConnectionState === "disconnected") {
+        emitWebRTCError(`ICE ${pc.iceConnectionState}`);
+        emitWebRTCFallback(pc.iceConnectionState);
+      }
     };
 
     // Handle incoming tracks (audio from server)
@@ -330,7 +346,7 @@ export function useWebRTC(
       signalingWsRef.current = ws;
 
       return new Promise<void>((resolve, reject) => {
-        const timeoutMs = connectTimeoutMs || 8000;
+        const timeoutMs = connectTimeoutMs || WEBRTC_CONNECT_TIMEOUT_MS || 8000;
         const timer = setTimeout(() => {
           console.error(`[${getTimestamp()}] ⏱️ WebRTC connect timeout after ${timeoutMs}ms`);
           ws.close();
@@ -440,13 +456,7 @@ export function useWebRTC(
         .then((bearer) =>
           fetch(`${API_BASE_URL}/webrtc/sessions/${sid}`, {
             method: "DELETE",
-            headers: { Authorization: `Bearer ${bearer || AUTH_BEARER}` },
-          })
-        )
-        .catch(() =>
-          fetch(`${API_BASE_URL}/webrtc/sessions/${sid}`, {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${AUTH_BEARER}` },
+            headers: { Authorization: `Bearer ${bearer}` },
           })
         )
         .catch(console.error);

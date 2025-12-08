@@ -8,10 +8,14 @@ import globals from "globals";
 const IGNORE = [
   "node_modules",
   "dist",
+  "**/dist/**",
   "build",
   "coverage",
   "convex/_generated",
   "apps/web/node_modules",
+  "apps/web/dist",
+  "apps/desktop/dist",
+  "apps/desktop/release",
   "backend/dist",
   "packages/shared/dist",
 ];

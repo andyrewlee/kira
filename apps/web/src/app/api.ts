@@ -1,8 +1,8 @@
 // Minimal API helpers; replace with real implementations when backend is ready.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
-const AUTH_BEARER = import.meta.env.VITE_DEMO_BEARER || "";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === "1";
+const CLERK_JWT_TEMPLATE = import.meta.env.VITE_CLERK_JWT_TEMPLATE || "convex";
 
 export async function seedDemo(): Promise<void> {
   if (USE_FAKE_CONTEXT) return;
@@ -77,16 +77,20 @@ export async function getAuthToken(): Promise<string> {
     const clerk: any = (window as any).Clerk;
     if (clerk?.session?.getToken) {
       try {
-        const t = await clerk.session.getToken();
+        const t = await clerk.session.getToken({ template: CLERK_JWT_TEMPLATE });
         if (t) return t;
       } catch {
         // fall through to dev token/local storage
       }
     }
-    const stored = window.localStorage.getItem("authToken");
-    if (stored) return stored;
+    // Dev-only local override
+    if (DEV_MODE) {
+      const stored = window.localStorage.getItem("authToken");
+      if (stored) return stored;
+    }
   }
-  return DEV_MODE ? AUTH_BEARER : "";
+  if (DEV_MODE && import.meta.env.VITE_DEMO_BEARER) return import.meta.env.VITE_DEMO_BEARER;
+  throw new Error("No auth token available");
 }
 
 export async function buildAuthHeaders() {
@@ -101,7 +105,8 @@ export async function buildAuthHeaders() {
 // Synchronous helper for quick calls that only need a dev/local token fallback.
 export function getAuthHeaderSync() {
   const token =
-    (typeof window !== "undefined" && window.localStorage.getItem("authToken")) || (DEV_MODE ? AUTH_BEARER : "");
+    (typeof window !== "undefined" && window.localStorage.getItem("authToken")) ||
+    (DEV_MODE ? import.meta.env.VITE_DEMO_BEARER : "");
   if (!token) throw new Error("No auth token available");
   return { Authorization: `Bearer ${token}` } as Record<string, string>;
 }

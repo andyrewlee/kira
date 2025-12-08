@@ -12,7 +12,12 @@
   "scripts": {
     "dev:web": "npm run dev -w @kira/web",
     "dev:backend": "npm run dev -w @kira/backend",
+    "dev:desktop": "npm run dev -w @kira/desktop",
+    "dev:desktop:full": "npm run dev:web & npm run dev:desktop",
+    "desktop:prod": "npm run build -w @kira/web && npm run build -w @kira/desktop && npm run start -w @kira/desktop",
+    "desktop:build": "npm run build -w @kira/web && npm run build -w @kira/desktop",
     "dev": "npm run dev:backend & npm run dev:web",
+    "test:integration": "RUN_INTEGRATION=1 TOKEN=dev-token API=http://localhost:4000 MOCK_XAI=1 npm run test -w @kira/tests",
     "lint": "eslint \"{apps,backend,packages,convex,tests}/**/*.{ts,tsx,js,jsx}\"",
     "typecheck": "npm run typecheck:all",
     "typecheck:all": "tsc -p apps/web/tsconfig.json --noEmit && tsc -p backend/tsconfig.json --noEmit && tsc -p convex/tsconfig.json --noEmit && tsc -p packages/shared/tsconfig.json --noEmit",

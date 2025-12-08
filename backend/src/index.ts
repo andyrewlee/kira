@@ -1,12 +1,12 @@
 import "dotenv/config";
-import express, { Response } from "express";
+import express, { Request, Response } from "express";
 import cors from "cors";
 import ExpressWs from "express-ws";
 import { requireAuth } from "./middleware/auth";
 import { registerWebrtcRoutes } from "./webrtc/routes";
 import { store } from "./store";
 import {
-  convexClient,
+  convexAvailable,
   convexSeedDemo,
   convexResetMeeting,
   convexGetContext,
@@ -26,6 +26,27 @@ const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 60000);
 const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX || 30);
 const MOCK_XAI = process.env.MOCK_XAI === "1";
 const AUDIO_RETENTION = process.env.AUDIO_RETENTION || "discard";
+
+const getBearer = (req: Request): string | undefined => {
+  const header = req.headers["authorization"];
+  if (typeof header !== "string") return undefined;
+  if (!header.startsWith("Bearer ")) return undefined;
+  return header.slice("Bearer ".length);
+};
+
+const getAuthSubject = (req: Request): string | undefined => {
+  const auth = (req as any).auth;
+  return auth?.sub || auth?.user_id || auth?.uid;
+};
+
+function ensureStoreAccess(req: Request, meetingId: string) {
+  const meeting = store.getMeeting(meetingId);
+  const subject = getAuthSubject(req);
+  if (meeting && subject && meeting.userId !== subject) {
+    return { ok: false, meeting } as const;
+  }
+  return { ok: true, meeting } as const;
+}
 
 // Simple rate limiter per token+endpoint
 const rateBuckets = new Map<string, number[]>();
@@ -50,18 +71,32 @@ function pushEvent(evt: DebugEvent) {
 
 // Debounce refresh tracking
 type TimeoutType = ReturnType<typeof setTimeout>;
-const refreshTrack = new Map<
-  string,
-  { count: number; timer: TimeoutType | null }
->();
+type RefreshState = { count: number; timer: TimeoutType | null; token?: string; subject?: string };
+const refreshTrack = new Map<string, RefreshState>();
 
-async function refreshNotesInternal(meetingId: string) {
-  await handleNotesRefresh(meetingId, false);
+async function refreshNotesInternal(meetingId: string, token?: string, subject?: string) {
+  await handleNotesRefresh(meetingId, false, undefined, token, subject);
 }
 
 // CORS
-const allowlist = (process.env.CORS_ALLOWLIST || "http://localhost:3000,http://localhost:5173,http://localhost:8080").split(",");
-app.use(cors({ origin: allowlist, credentials: true }));
+const allowlistEnv =
+  process.env.ALLOWED_ORIGINS || process.env.CORS_ALLOWLIST || "http://localhost:3000,http://localhost:5173,http://localhost:8080";
+const allowlist = allowlistEnv.split(",").map((o) => o.trim()).filter(Boolean);
+const ALLOW_FILE_ORIGIN = process.env.ALLOW_FILE_ORIGIN !== "0";
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Electron/file:// requests have no origin header; allow when flag is on (default)
+      if (!origin) {
+        if (ALLOW_FILE_ORIGIN) return callback(null, true);
+        return callback(null, false);
+      }
+      if (allowlist.includes(origin)) return callback(null, true);
+      return callback(null, false);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Health
@@ -111,8 +146,8 @@ app.post("/stt", requireAuth, async (req, res) => {
     const ts = Date.now();
     if (meetingId) {
       try {
-        if (convexClient) {
-          await convexAppendTurn({ meetingId, channel: "mic", speakerKey, text, ts, source: "human" });
+        if (convexAvailable()) {
+          await convexAppendTurn({ meetingId, channel: "mic", speakerKey, text, ts, source: "human" }, getBearer(req));
         } else {
           store.appendTurn({ meetingId, channel: "mic", speakerKey, text, ts, source: "human" });
         }
@@ -178,7 +213,7 @@ app.post("/chat", requireAuth, async (req, res) => {
   const message = req.body?.message || "";
   let ctx: any = null;
   try {
-    if (convexClient) ctx = await convexGetContext(meetingId, 20);
+    if (convexAvailable()) ctx = await convexGetContext(meetingId, 20, getBearer(req));
   } catch (err) {
     console.error("Convex chat context failed", err);
   }
@@ -224,10 +259,16 @@ app.post("/chat", requireAuth, async (req, res) => {
   }
 });
 
-async function handleNotesRefresh(meetingId: string, returnResponse: boolean = true, res?: express.Response) {
+async function handleNotesRefresh(
+  meetingId: string,
+  returnResponse: boolean = true,
+  res?: express.Response,
+  token?: string,
+  subject?: string
+) {
   let ctx: any = null;
   try {
-    if (convexClient) ctx = await convexGetContext(meetingId, MAX_TURNS_CONTEXT);
+    if (convexAvailable() && token) ctx = await convexGetContext(meetingId, MAX_TURNS_CONTEXT, token);
   } catch (err) {
     console.error("Convex notes context failed", err);
   }
@@ -235,6 +276,13 @@ async function handleNotesRefresh(meetingId: string, returnResponse: boolean = t
   if (!ctx) {
     if (returnResponse && res) res.status(404).json({ error: "Meeting not found" });
     return;
+  }
+  if (subject) {
+    const meeting = store.getMeeting(meetingId);
+    if (meeting && meeting.userId !== subject) {
+      if (returnResponse && res) res.status(403).json({ error: "Forbidden" });
+      return;
+    }
   }
 
   const prompt = `Summarize this meeting. Provide concise notes (bullets) and a summary. Recent turns: ${ctx.turns
@@ -245,7 +293,7 @@ async function handleNotesRefresh(meetingId: string, returnResponse: boolean = t
     if (MOCK_XAI) {
       const notes = ctx.notes.length ? ctx.notes : ["mock note"];
       const summary = ctx.summary || "mock summary";
-      if (convexClient) await convexSetNotes(meetingId, notes, summary);
+      if (convexAvailable() && token) await convexSetNotes(meetingId, notes, summary, token);
       else store.setNotesAndSummary(meetingId, notes, summary);
       pushEvent({ ts: new Date().toISOString(), type: "notes:set", meetingId, details: { summary, mock: true } });
       if (returnResponse && res) res.json({ summary, notes, mock: true });
@@ -281,13 +329,14 @@ async function handleNotesRefresh(meetingId: string, returnResponse: boolean = t
     } catch {}
     const notes = Array.isArray(parsed.notes) ? parsed.notes : ctx.notes;
     const summary = typeof parsed.summary === "string" ? parsed.summary : ctx.summary;
-    if (convexClient) {
-      await convexSetNotes(meetingId, notes, summary);
+    const canUseConvex = convexAvailable() && Boolean(token);
+    if (canUseConvex) {
+      await convexSetNotes(meetingId, notes, summary, token);
     } else {
       store.setNotesAndSummary(meetingId, notes, summary);
     }
     pushEvent({ ts: new Date().toISOString(), type: "notes:set", meetingId, details: { summary } });
-    if (returnResponse && res) res.json({ summary, notes, fallback: !convexClient });
+    if (returnResponse && res) res.json({ summary, notes, fallback: !canUseConvex });
   } catch (err) {
     console.error("Grok notes exception", err);
     if (returnResponse && res) res.status(500).json({ error: "Notes refresh failed" });
@@ -297,15 +346,29 @@ async function handleNotesRefresh(meetingId: string, returnResponse: boolean = t
 // Notes refresh: call Grok to produce notes/summary, write to Convex/store
 app.post("/notes/refresh", requireAuth, async (req, res) => {
   const meetingId = req.body?.meetingId || "demo-meeting";
-  await handleNotesRefresh(meetingId, true, res);
+  await handleNotesRefresh(meetingId, true, res, getBearer(req), getAuthSubject(req));
+});
+
+// Track desktop audio STT (optional)
+app.post("/debug/logAudio", requireAuth, async (req, res) => {
+  const { meetingId, path, sizeMb, duration, format, replay } = req.body || {};
+  pushEvent({
+    ts: new Date().toISOString(),
+    type: replay ? "audio:stt_file_replay" : "audio:stt_file",
+    meetingId,
+    details: { path, sizeMb, duration, format, replay: Boolean(replay) },
+  });
+  res.json({ ok: true });
 });
 
 // Meeting handlers (Convex first, fallback to in-memory)
 app.post("/seedDemoMeeting", requireAuth, async (req, res) => {
-  const userId = req.body?.userId || "demo-user";
+  const userId = getAuthSubject(req) || req.body?.userId || "demo-user";
+  const token = getBearer(req);
+  const subject = getAuthSubject(req);
   try {
-    if (convexClient) {
-      const meetingId = await convexSeedDemo(userId);
+    if (convexAvailable() && token) {
+      const meetingId = await convexSeedDemo(userId, token);
       return res.json({ meetingId });
     }
   } catch (err) {
@@ -317,14 +380,17 @@ app.post("/seedDemoMeeting", requireAuth, async (req, res) => {
 
 app.post("/resetMeeting", requireAuth, async (req, res) => {
   const meetingId = req.body?.meetingId || "demo-meeting";
+  const token = getBearer(req);
   try {
-    if (convexClient) {
-      await convexResetMeeting(meetingId);
+    if (convexAvailable() && token) {
+      await convexResetMeeting(meetingId, token);
       return res.json({ ok: true });
     }
   } catch (err) {
     console.error("Convex resetMeeting failed", err);
   }
+  const access = ensureStoreAccess(req, meetingId);
+  if (!access.ok) return res.status(403).json({ error: "Forbidden" });
   store.resetMeeting(meetingId);
   res.json({ ok: true, fallback: true });
 });
@@ -333,28 +399,34 @@ app.post("/meetings/:id/renameSpeaker", requireAuth, async (req, res) => {
   const meetingId = req.params.id;
   const { speakerKey, alias } = req.body || {};
   if (!speakerKey || !alias) return res.status(400).json({ error: "Missing speakerKey/alias" });
+  const token = getBearer(req);
   try {
-    if (convexClient) {
-      await convexRenameSpeaker(meetingId, speakerKey, alias);
+    if (convexAvailable() && token) {
+      await convexRenameSpeaker(meetingId, speakerKey, alias, token);
       return res.json({ ok: true });
     }
   } catch (err) {
     console.error("Convex renameSpeaker failed", err);
   }
+  const access = ensureStoreAccess(req, meetingId);
+  if (!access.ok) return res.status(403).json({ error: "Forbidden" });
   store.renameSpeaker(meetingId, speakerKey, alias);
   res.json({ ok: true, fallback: true });
 });
 
 app.get("/meetings/:id/context", requireAuth, async (req, res) => {
   const tail = Number(req.query.tail) || 60;
+  const token = getBearer(req);
   try {
-    if (convexClient) {
-      const ctx = await convexGetContext(req.params.id, tail);
+    if (convexAvailable() && token) {
+      const ctx = await convexGetContext(req.params.id, tail, token);
       return res.json(ctx);
     }
   } catch (err) {
     console.error("Convex getContext failed", err);
   }
+  const access = ensureStoreAccess(req, req.params.id);
+  if (!access.ok) return res.status(403).json({ error: "Forbidden" });
   const ctx = store.getContext(req.params.id, tail);
   if (!ctx) return res.status(404).json({ error: "Meeting not found" });
   res.json(ctx);
@@ -363,26 +435,32 @@ app.get("/meetings/:id/context", requireAuth, async (req, res) => {
 app.post("/meetings/:id/ingest", requireAuth, async (req, res) => {
   const meetingId = req.params.id;
   const { channel = "mic", speakerKey = "me", text = "", ts = Date.now(), source = "human" } = req.body || {};
+  const token = getBearer(req);
+  const subject = getAuthSubject(req);
   try {
-    if (convexClient) {
-      await convexAppendTurn({ meetingId, channel, speakerKey, text, ts, source });
+    if (convexAvailable() && token) {
+      await convexAppendTurn({ meetingId, channel, speakerKey, text, ts, source }, token);
       return res.json({ ok: true });
     }
   } catch (err) {
     console.error("Convex ingest failed", err);
   }
+  const access = ensureStoreAccess(req, meetingId);
+  if (!access.ok) return res.status(403).json({ error: "Forbidden" });
   store.appendTurn({ meetingId, channel, speakerKey, text, ts, source });
   // Debounce notes refresh
-  const entry = refreshTrack.get(meetingId) || { count: 0, timer: null };
+  const entry = refreshTrack.get(meetingId) || { count: 0, timer: null, token, subject };
+  entry.token = token;
+  entry.subject = subject;
   entry.count += 1;
   if (entry.count >= DEBOUNCE_TURNS) {
     entry.count = 0;
     if (entry.timer) clearTimeout(entry.timer);
-    refreshNotesInternal(meetingId);
+    refreshNotesInternal(meetingId, entry.token, entry.subject);
   } else {
     if (entry.timer) clearTimeout(entry.timer);
     entry.timer = setTimeout(() => {
-      refreshNotesInternal(meetingId);
+      refreshNotesInternal(meetingId, entry.token, entry.subject);
       const current = refreshTrack.get(meetingId);
       if (current) current.count = 0;
     }, DEBOUNCE_MS);

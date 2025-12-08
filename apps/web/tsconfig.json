@@ -4,7 +4,14 @@
     "jsx": "react-jsx",
     "lib": ["ES2020", "DOM"],
     "outDir": "dist",
-    "rootDir": "../.."
+    "rootDir": "../..",
+    "baseUrl": "../..",
+    "paths": {
+      "@shared": ["packages/shared/src/index.ts"],
+      "@shared/*": ["packages/shared/src/*"],
+      "convex/_generated": ["convex/_generated/api"],
+      "convex/_generated/*": ["convex/_generated/*"]
+    }
   },
-  "include": ["src", "../packages/shared/src/**/*", "../convex/_generated/**/*"]
+  "include": ["src", "../../packages/shared/src/**/*", "../../convex/_generated/**/*"]
 }

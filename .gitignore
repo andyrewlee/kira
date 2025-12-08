@@ -4,3 +4,6 @@ node_modules
 *.log
 dist
 .DS_Store
+apps/desktop/dist
+apps/desktop/dist_electron
+apps/desktop/builder-debug.yml

@@ -15,12 +15,37 @@ import { MeetingContextPayload, renderContextText } from "@shared";
 import { playMp3Blob } from "./audio";
 import { blobToBase64 } from "./utils";
 
-const USE_WEBRTC_DESKTOP = import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
+const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+const IS_DESKTOP = (window as any)?.kiraDesktop?.isDesktop || searchParams?.get("desktop") === "1";
+
+const USE_WEBRTC_DESKTOP = IS_DESKTOP ? true : import.meta.env.VITE_USE_WEBRTC_DESKTOP !== "0";
 const USE_FAKE_CONTEXT = import.meta.env.VITE_USE_FAKE_CONTEXT === "1";
 const AUDIO_RETENTION = import.meta.env.VITE_AUDIO_RETENTION || "discard";
 const BRIEFING_MODE = import.meta.env.VITE_BRIEFING_MODE || "tts";
 const VOICE_INTERRUPT_MODE = import.meta.env.VITE_VOICE_INTERRUPT_MODE || "tap";
 const VOICE = import.meta.env.VITE_VOICE || "una";
+const LAST_AUDIO_KEY = "kira:lastAudio";
+const DEBUG_POLL_MS = Number(import.meta.env.VITE_DEBUG_POLL_MS || 10000);
+
+async function postAudioLog(payload: {
+  meetingId: string;
+  path: string;
+  sizeMb?: string | null;
+  duration?: string | null;
+  format: string;
+  replay: boolean;
+}) {
+  try {
+    const headers = await buildAuthHeaders();
+    await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/debug/logAudio`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    console.error("Failed to log audio debug event", err);
+  }
+}
 
 function MeetingAppInner() {
   const audioSession = useAudioSessionState();
@@ -34,30 +59,77 @@ function MeetingAppInner() {
   const [events, setEvents] = React.useState<any[]>([]);
   const [lastAudio, setLastAudio] = React.useState<HTMLAudioElement | null>(null);
   const [playbackSpeed, setPlaybackSpeed] = React.useState<number>(1);
+  const [desktopVersion, setDesktopVersion] = React.useState<string | undefined>(undefined);
+  const [selectedAudioPath, setSelectedAudioPath] = React.useState<string | null>(null);
+  const [selectedAudioSizeMb, setSelectedAudioSizeMb] = React.useState<string | null>(null);
+  const [selectedAudioDuration, setSelectedAudioDuration] = React.useState<string | null>(null);
+  const [audioStatus, setAudioStatus] = React.useState<"none" | "loaded" | "missing">("none");
+  const eventsRef = React.useRef<number | null>(null);
+  const [autoRefreshEvents, setAutoRefreshEvents] = React.useState<boolean>(IS_DESKTOP);
   const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
   const chunksRef = React.useRef<BlobPart[]>([]);
   const meetingId = "demo-meeting";
 
-  // Listen for WebRTC errors/fallbacks
+  const playBaselineBriefing = React.useCallback(
+    async (text?: string) => {
+      const summary = text || context?.summary || "Here is your briefing.";
+      const blob = await briefMe(summary, VOICE, playbackSpeed);
+      const audioEl = await playMp3Blob(blob);
+      audioEl.playbackRate = playbackSpeed;
+      setLastAudio(audioEl);
+      audioSession.send({ type: "STOP_PLAYBACK" });
+      addToast("Playing briefing", "success");
+    },
+    [addToast, audioSession, context?.summary, playbackSpeed]
+  );
+
+  const handleWebRTCFallback = React.useCallback(
+    async (_reason?: string) => {
+      if (lastAudio) {
+        lastAudio.pause();
+        lastAudio.currentTime = 0;
+      }
+      audioSession.send({ type: "CANCEL" });
+      setWebrtcAvailable(false);
+      addToast("Voice agent unavailable — using standard briefing", "error");
+      if (BRIEFING_MODE === "webrtc" && audioSession.state === "playingBriefing") {
+        try {
+          await playBaselineBriefing();
+        } catch (err) {
+          console.error("Baseline briefing fallback failed", err);
+        }
+      }
+    },
+    [addToast, audioSession, lastAudio, playBaselineBriefing]
+  );
+
+  // Listen for WebRTC errors/fallbacks and voice interrupts
   React.useEffect(() => {
     const onWebRTCError = (e: Event) => {
       const detail = (e as CustomEvent).detail as string;
-      addToast(detail || "WebRTC error", "error");
-      audioSession.send({ type: "CANCEL" });
-      setWebrtcAvailable(false); // fallback to baseline
+      console.warn("WebRTC error", detail);
+      void handleWebRTCFallback(detail);
     };
-    const onWebRTCFallback = () => setWebrtcAvailable(false);
+    const onWebRTCFallback = (e: Event) => {
+      const detail = (e as CustomEvent).detail as string;
+      console.warn("WebRTC fallback", detail);
+      void handleWebRTCFallback(detail);
+    };
+    const onInterrupt = () => audioSession.send({ type: "INTERRUPT" });
+
     if (typeof window !== "undefined") {
       window.addEventListener("webrtc:error", onWebRTCError as any);
       window.addEventListener("webrtc:fallback", onWebRTCFallback as any);
+      window.addEventListener("webrtc:interrupt", onInterrupt as any);
     }
     return () => {
       if (typeof window !== "undefined") {
         window.removeEventListener("webrtc:error", onWebRTCError as any);
         window.removeEventListener("webrtc:fallback", onWebRTCFallback as any);
+        window.removeEventListener("webrtc:interrupt", onInterrupt as any);
       }
     };
-  }, [addToast, audioSession]);
+  }, [audioSession, handleWebRTCFallback]);
 
   const handleSeed = async () => {
     if (USE_FAKE_CONTEXT) {
@@ -88,16 +160,12 @@ function MeetingAppInner() {
   const handleBrief = async () => {
     try {
       audioSession.send({ type: "PLAY_BRIEFING" });
+      const summaryText = context?.summary || "Here is your briefing.";
       if (BRIEFING_MODE === "webrtc" && webrtcAvailable) {
-        window.dispatchEvent(new CustomEvent("webrtc:brief", { detail: context?.summary || "" }));
+        window.dispatchEvent(new CustomEvent("webrtc:brief", { detail: summaryText }));
         addToast("Sending briefing over WebRTC", "info");
       } else {
-        const blob = await briefMe(context?.summary || "Here is your briefing.", VOICE, playbackSpeed);
-        const audioEl = await playMp3Blob(blob);
-        audioEl.playbackRate = playbackSpeed;
-        setLastAudio(audioEl);
-        audioSession.send({ type: "STOP_PLAYBACK" });
-        addToast("Playing briefing", "success");
+        await playBaselineBriefing(summaryText);
       }
     } catch (err) {
       console.error(err);
@@ -221,9 +289,153 @@ function MeetingAppInner() {
     }
   }, [addToast]);
 
+  const handleReplaySTT = React.useCallback(async () => {
+    if (!selectedAudioPath || !(window as any).kiraDesktop?.loadAudioByPath) {
+      addToast("No audio file loaded", "error");
+      return;
+    }
+    try {
+      const result =
+        (await (window as any).kiraDesktop?.loadAudioByPath?.(selectedAudioPath)) ||
+        (await (window as any).kiraDesktop?.loadAudioFile?.());
+      if (!result) {
+        addToast("Saved audio missing or unreadable", "error");
+        setSelectedAudioPath(null);
+        setSelectedAudioSizeMb(null);
+        setSelectedAudioDuration(null);
+        setAudioStatus("missing");
+        if (typeof window !== "undefined") window.localStorage.removeItem(LAST_AUDIO_KEY);
+        return;
+      }
+      const rawExt = (result.ext || "mp3").toLowerCase();
+      const format = rawExt === "wav" ? "wav" : "mp3";
+      const { text } = await sttBase64(result.base64, format, meetingId, "me");
+      setLastSTT(text);
+      await loadContext();
+      const sizeMb = result.size ? (result.size / 1024 / 1024).toFixed(2) : undefined;
+      setSelectedAudioPath(result.path);
+      setSelectedAudioSizeMb(sizeMb || null);
+      setSelectedAudioDuration(result.durationSec ? `${result.durationSec.toFixed(1)}s` : null);
+      setAudioStatus("loaded");
+      const detail = [sizeMb ? `${sizeMb} MB` : null, result.durationSec ? `${result.durationSec.toFixed(1)}s` : null].filter(Boolean).join(", ");
+      addToast(`Re-transcribed ${format.toUpperCase()}${detail ? ` (${detail})` : ""}`, "success");
+      void postAudioLog({ meetingId, path: result.path, sizeMb, duration: result.durationSec ? `${result.durationSec.toFixed(1)}s` : null, format, replay: true });
+    } catch (err) {
+      console.error(err);
+      addToast("Replay STT failed", "error");
+    }
+  }, [addToast, loadContext, meetingId, selectedAudioPath]);
+
   React.useEffect(() => {
     void loadContext();
   }, [loadContext]);
+
+  // Fetch desktop version when available
+  React.useEffect(() => {
+    if (IS_DESKTOP && (window as any).kiraDesktop?.getVersion) {
+      (window as any)
+        .kiraDesktop.getVersion()
+        .then((v: string) => setDesktopVersion(v))
+        .catch(() => {});
+    }
+  }, []);
+
+  // Clear persisted desktop audio info when not running desktop
+  React.useEffect(() => {
+    if (!IS_DESKTOP && typeof window !== "undefined") {
+      window.localStorage.removeItem(LAST_AUDIO_KEY);
+      setAudioStatus("none");
+    }
+  }, []);
+
+  // Poll debug events every 10s when desktop to surface backend logs automatically
+  React.useEffect(() => {
+    if (!IS_DESKTOP || !autoRefreshEvents) return;
+    let cancelled = false;
+    let polling = false;
+    const poll = async () => {
+      if (polling) return;
+      polling = true;
+      try {
+        const headers = await buildAuthHeaders();
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/debug/events`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setEvents(data);
+        }
+      } catch (err) {
+        console.error("Debug events poll failed", err);
+      } finally {
+        polling = false;
+      }
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        if (eventsRef.current) {
+          window.clearInterval(eventsRef.current);
+          eventsRef.current = null;
+        }
+      } else if (document.visibilityState === "visible") {
+        if (!eventsRef.current) {
+          eventsRef.current = window.setInterval(poll, DEBUG_POLL_MS);
+        }
+      }
+    };
+    poll();
+    eventsRef.current = window.setInterval(poll, DEBUG_POLL_MS);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      if (eventsRef.current) window.clearInterval(eventsRef.current);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      cancelled = true;
+    };
+  }, [autoRefreshEvents]);
+  const handleClearSavedAudio = () => {
+    setSelectedAudioPath(null);
+    setSelectedAudioSizeMb(null);
+    setSelectedAudioDuration(null);
+    setAudioStatus("none");
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(LAST_AUDIO_KEY);
+    }
+    addToast("Cleared saved audio", "info");
+  };
+
+  // Restore last loaded audio info (desktop only)
+  React.useEffect(() => {
+    if (!IS_DESKTOP || typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem(LAST_AUDIO_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as { path?: string; sizeMb?: string; dur?: string } | null;
+        if (parsed?.path) {
+          const hydrate = async () => {
+            const exists = await (window as any).kiraDesktop?.checkFile?.(parsed.path);
+            if (!exists) {
+              setAudioStatus("missing");
+              addToast("Saved audio missing on disk", "error");
+              return;
+            }
+            setSelectedAudioPath(parsed.path || null);
+            setSelectedAudioSizeMb(parsed.sizeMb || null);
+            setSelectedAudioDuration(parsed.dur || null);
+            setAudioStatus("loaded");
+            addToast("Restored last loaded audio", "info");
+          };
+          void hydrate();
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, [addToast]);
+
+  React.useEffect(() => {
+    if (!IS_DESKTOP && typeof window !== "undefined") {
+      window.localStorage.removeItem(LAST_AUDIO_KEY);
+      setAudioStatus("none");
+    }
+  }, []);
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: "100vh" }}>
@@ -289,6 +501,55 @@ function MeetingAppInner() {
           }}
           voiceInterruptMode={VOICE_INTERRUPT_MODE}
           playbackSpeed={playbackSpeed}
+          isDesktop={IS_DESKTOP}
+          desktopVersion={desktopVersion}
+          autoRefreshEvents={autoRefreshEvents}
+          onToggleAutoRefresh={() => setAutoRefreshEvents((v) => !v)}
+          onOpenLogs={
+            IS_DESKTOP && (window as any).kiraDesktop?.openLogs
+              ? () => (window as any).kiraDesktop?.openLogs?.()
+              : undefined
+          }
+          onSelectAudio={
+            IS_DESKTOP && (window as any).kiraDesktop?.loadAudioFile
+              ? async () => {
+                  try {
+                    const result = await (window as any).kiraDesktop?.loadAudioFile?.();
+                    if (!result) return;
+                    setSelectedAudioPath(result.path);
+                    const rawExt = (result.ext || "mp3").toLowerCase();
+                    const format = rawExt === "wav" ? "wav" : "mp3"; // normalise to supported formats
+                    const { text } = await sttBase64(result.base64, format, meetingId, "me");
+                    setLastSTT(text);
+                    await loadContext();
+                    const sizeMb = result.size ? (result.size / 1024 / 1024).toFixed(2) : undefined;
+                    setSelectedAudioSizeMb(sizeMb || null);
+                    const dur = result.durationSec ? `${result.durationSec.toFixed(1)}s` : undefined;
+                    setSelectedAudioDuration(dur || null);
+                    try {
+                      window.localStorage.setItem(LAST_AUDIO_KEY, JSON.stringify({ path: result.path, sizeMb: sizeMb || null, dur }));
+                    } catch {
+                      // ignore storage failures
+                    }
+                    setAudioStatus("loaded");
+                    const detail = [sizeMb ? `${sizeMb} MB` : null, dur].filter(Boolean).join(", ");
+                    addToast(`Transcribed ${format.toUpperCase()}${detail ? ` (${detail})` : ""}`, "success");
+
+                    // Log into backend debug events panel for traceability
+                    void postAudioLog({ meetingId, path: result.path, sizeMb, duration: dur || null, format, replay: false });
+                  } catch (err) {
+                    console.error(err);
+                    addToast("Audio file load or STT failed", "error");
+                  }
+                }
+              : undefined
+          }
+          onReplayAudio={IS_DESKTOP ? handleReplaySTT : undefined}
+          onClearSavedAudio={IS_DESKTOP ? handleClearSavedAudio : undefined}
+          selectedAudioPath={selectedAudioPath}
+          selectedAudioSizeMb={selectedAudioSizeMb}
+          selectedAudioDuration={selectedAudioDuration}
+          audioStatus={audioStatus}
         />
         <div style={{ padding: "0.75rem 1rem", background: "#0f172a", color: "#94a3b8", borderTop: "1px solid #1f2937" }}>
           Audio session state: <span style={{ color: "#e2e8f0" }}>{audioSession.state}</span>
